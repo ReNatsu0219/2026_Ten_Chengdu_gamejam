@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8288fa66c0e900642b34c9a1a4b46275, type: 3}
+  m_Name: PlayerConfig
+  m_EditorClassIdentifier: 
+  <BaseSpeed>k__BackingField: 2
+  <AnimConfig>k__BackingField:
+    <IdleAnim_Front>k__BackingField: {fileID: 7400000, guid: 49a5d91494826f54b85eb8c0f81c74ad, type: 2}
+    <IdleAnim_Back>k__BackingField: {fileID: 7400000, guid: 388716941cfb6d647bb857ed36d3be74, type: 2}
+    <IdleAnim_Left>k__BackingField: {fileID: 7400000, guid: 2b8214e1f1bbf9e41a2e93f802c9956e, type: 2}
+    <IdleAnim_Right>k__BackingField: {fileID: 7400000, guid: c3e36256d049b784397daf400dc33dbc, type: 2}
+    <MoveAnim_Front>k__BackingField: {fileID: 7400000, guid: 7b0240b4f03f7df4b852f381d96e53e2, type: 2}
+    <MoveAnim_Back>k__BackingField: {fileID: 7400000, guid: 1bf3c517eae880b468c136de58d91375, type: 2}
+    <MoveAnim_Left>k__BackingField: {fileID: 7400000, guid: dcb8b4dc99f38a84ea05998951bfdc9d, type: 2}
+    <MoveAnim_Right>k__BackingField: {fileID: 7400000, guid: d0036092cfecdb14daf7e8b6e66282fe, type: 2}
