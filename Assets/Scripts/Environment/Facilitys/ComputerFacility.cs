@@ -18,12 +18,17 @@ public class ComputerFacility : Facilitybase
     [Header("状态")]
     [SerializeField] private PCStatus currentStatus=PCStatus.Disabled;
     [SerializeField] private bool isCharging=false;
+    [SerializeField] private bool isEnemySpawned = false;
 
     [Header("参数")]
     [SerializeField] private float maxEnergy = 1f;
     [SerializeField] private float energyChargingRate = 0.1f;
     [SerializeField] private float energyLosingRate = 0.01f;
     [SerializeField] private float deadlineEnergy = -3f;
+    [SerializeField] private float baseEnemySpawnRate=0.05f;
+    [SerializeField] private int enemyCooldown = 10;
+
+    private int enemtCooldownTimer = 0;
                                   
     public float FacilityEnergy=>facilityEnergy;
     public PCStatus CurrentStatus=>currentStatus;
@@ -69,7 +74,7 @@ public class ComputerFacility : Facilitybase
         NightManager.Instance.OnPcEnergyChange -= TickInNight;
     }
 
-    private void TickInNight()
+    protected override void TickInNight()
     {
         if (facilityEnergy < deadlineEnergy)
         {
@@ -85,6 +90,8 @@ public class ComputerFacility : Facilitybase
         {
             EnergyLosing(GetLosingRate());
         }
+
+        if(enemtCooldownTimer>0)enemtCooldownTimer--;
     }
 
     private float GetChargingRate()
@@ -97,9 +104,40 @@ public class ComputerFacility : Facilitybase
         return energyLosingRate + GameManager.Instance.CurrentDay * 0.02f - (float)allocatedPower * 0.001f;    //能量损失计算公式（待改）
     }
 
+    private float GetSpawnRate()
+    {
+        return baseEnemySpawnRate + (float)(GameManager.Instance.CurrentDay * 0.001 + NightManager.Instance.CurrentNightTime * 0.001);
+    }
+
+    private bool ShouldSpawnEnemyOnInteract()
+    {
+        return Random.value < GetSpawnRate();
+    
+    }
+
+
     protected override void OnInteract()
     {
+        if (currentStatus == PCStatus.ChargingMode)
+        {
+            if (enemtCooldownTimer == 0)
+            {
+                isEnemySpawned = true ? ShouldSpawnEnemyOnInteract() : false;
+                enemtCooldownTimer = enemyCooldown;
+            }
 
+            if (isEnemySpawned)
+            {
+                //此处写夜晚打开电脑鬼出现UI的代码
+            }
+            else
+            {
+                //此处写夜晚打开正常UI的代码
+            }
+        }else if(currentStatus == PCStatus.PowerAllocationMode)
+        {
+            //此处写白天打开UI的代码
+        }
     }
 
     public override void OnDayStart()
@@ -124,6 +162,7 @@ public class ComputerFacility : Facilitybase
     {
         base.ResetFacility();
         facilityEnergy = maxEnergy;
+        isEnemySpawned = false;
     }
 
 }

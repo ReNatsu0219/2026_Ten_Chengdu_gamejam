@@ -13,10 +13,10 @@ public class DoorFacility : Facilitybase
 {
     [Header("参数")]
     [SerializeField] private int konckerCooldownTimer = 0;  //敲门鬼冷却计时器
-    [SerializeField] private int konckerBaseCooldown = 40; //敲门鬼基础冷却
-    [SerializeField] private int konckerCooldownRange = 5;   //冷却浮动范围
+    [SerializeField] private int konckerBaseCooldown = 80; //敲门鬼基础冷却
+    [SerializeField] private int konckerCooldownRange = 20;   //冷却浮动范围
     [SerializeField] private int currentCooldown = 0;   //当前进行的冷却时间
-    [SerializeField] private float knockDuration = 3f; // 敲门持续时间
+    [SerializeField] private float knockDuration = 6f; // 敲门持续时间
     [SerializeField] private float knockerStayDuration = 3f;    //敲门鬼停留时间
 
     [Header("状态")]
@@ -152,7 +152,7 @@ public class DoorFacility : Facilitybase
         return Mathf.Max(5, result);
     }
 
-    private void TickInNight()
+    protected override void TickInNight()
     {
         if (currentStatus != DoorStatus.Idle) return;
 

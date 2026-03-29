@@ -9,6 +9,12 @@ public class InputMgr : MonoSingleton<InputMgr>
         get => InputMap.Gameplay.Movement.ReadValue<Vector2>();
     }
 
+    public bool InteractPressed
+    {
+        get => InputMap.Gameplay.Interact.WasPressedThisFrame();
+    }
+
+
     protected override void Awake()
     {
         base.Awake();

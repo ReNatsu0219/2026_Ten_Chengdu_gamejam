@@ -13,11 +13,13 @@ public class NightManager : MonoBehaviour
 
     [Header("刷新间隔")]
     [SerializeField] private float enemySpawnsInterval = 1f;    //敌人刷新间隔
-    [SerializeField] private float pcEnergyChangeInterval = 0.5f;  //电脑掉电的时间间隔
+    [SerializeField] private float pcEnergyChangeInterval = 1f;  //电脑掉电的时间间隔
+    [SerializeField] private float quickInterval = 0.2f;    //快速刷新间隔（用于鬼手或者灯）
 
     [Header("计时器")]
     [SerializeField] private float pcEnergyTimer = 0f;
     [SerializeField] private float enemySpawnTimer = 0f;
+    [SerializeField] private float quickTimer = 0f;
 
     [Header("夜晚状态")]
     [SerializeField] private bool isActive=false;
@@ -29,10 +31,12 @@ public class NightManager : MonoBehaviour
     public float CurrentNightTime => currentNightTime;
     public float EnemySpawnsInterval=> enemySpawnsInterval;
     public float PcEnergyChangeInterval => pcEnergyChangeInterval;
+    public float QuickInterval => quickInterval;
     public bool IsActive => isActive;
 
     public event Action OnEnemySpawnsTick; //敌人刷新事件
     public event Action OnPcEnergyChange;  //电脑掉电事件
+    public event Action OnQuickTick;    //快速刷新事件
 
     private void Awake()
     {
@@ -68,6 +72,7 @@ public class NightManager : MonoBehaviour
         enemySpawnTimer = 0f;
         currentNightTime = 0f;
         pcEnergyTimer = 0f;
+        quickTimer = 0f;
         ActivateNight();
     }
 
@@ -91,6 +96,7 @@ public class NightManager : MonoBehaviour
         enemySpawnTimer += Time.deltaTime;
         currentNightTime += Time.deltaTime;
         pcEnergyTimer += Time.deltaTime;
+        quickTimer += Time.deltaTime;
     }
 
     private void DetectEnemySpawns()
@@ -111,6 +117,15 @@ public class NightManager : MonoBehaviour
         }
     }
 
+    private void DetectQuickTick()
+    {
+        while (quickTimer >= quickInterval)
+        {
+            quickTimer -= quickInterval;
+            OnQuickTick?.Invoke();
+        }
+    }
+
     private void DetectNightClear()
     {
         if (currentNightTime >= nightDuration)
@@ -119,9 +134,9 @@ public class NightManager : MonoBehaviour
         }
     }
 
-    public void PlayerOnBed()
+    public void SetPlayerOnBed(bool value)
     {
-        isPlayerOnBed = true;
+        isPlayerOnBed = value;
     }
 
     private void Update()
@@ -131,6 +146,7 @@ public class NightManager : MonoBehaviour
         TimeTick();
         DetectPCEnergy();
         DetectEnemySpawns();
+        DetectQuickTick();
         DetectNightClear();
     }
 }

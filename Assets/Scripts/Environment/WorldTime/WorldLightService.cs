@@ -1,35 +1,173 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 
-public class WorldLightService
+public class LightService : MonoBehaviour
 {
-    private Light2D _light;
-    private List<Color> _colors = new List<Color>();//定义一个泛型集合，存储线性插值经过的端点的值
-    private int _currentIdx;//此时颜色序号
-    private float _time;
-    public WorldLightService()
-    {
-        _light = WorldTimeMgr.Instance.WorldLight;
-        _colors = WorldTimeMgr.Instance.ColorsCfg;
+    [Header("夜晚颜色关键帧")]
+    [SerializeField] private List<Color> nightColors = new List<Color>();
 
-        WorldTimeMgr.Instance.TimeEvent += ColorFlow;
+    [Header("夜晚亮度曲线")]
+    [SerializeField] private float nightStartIntensity = 0.8f;
+    [SerializeField] private float nightMidIntensity = 0.45f;
+    [SerializeField] private float nightEndIntensity = 0.8f;
+
+    private int currentColorIndex = 0;
+    private float lastProgress = 0f;
+    private bool isNightRunning = false;
+
+    private void Start()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnDayStarted += HandleDayStarted;
+            GameManager.Instance.OnNightStarted += HandleNightStarted;
+            GameManager.Instance.OnNightEnded += HandleNightEnded;
+        }
+
+        if (NightManager.Instance != null)
+        {
+            NightManager.Instance.OnQuickTick += TickLight;
+        }
+
+        if (GameManager.Instance != null)
+        {
+            if (GameManager.Instance.IsNight)
+            {
+                HandleNightStarted();
+            }
+            else
+            {
+                HandleDayStarted();
+            }
+        }
     }
 
-    public void ColorFlow(float time)
+    private void OnDisable()
     {
-        if (time < _time) _currentIdx = 0;
-        //这里判断i是因为：在i超过长度后，要使插值停止工作
-        else if (time <= (float)((_currentIdx + 1f) / (_colors.Count - 1f)) && _currentIdx < _colors.Count - 1)
+        if (GameManager.Instance != null)
         {
-            _light.color = Color.Lerp(_colors[_currentIdx], _colors[_currentIdx + 1], time * (_colors.Count - 1) - _currentIdx);
-            _light.intensity = 1f - time;
+            GameManager.Instance.OnDayStarted -= HandleDayStarted;
+            GameManager.Instance.OnNightStarted -= HandleNightStarted;
+            GameManager.Instance.OnNightEnded -= HandleNightEnded;
         }
-        else if (_currentIdx < _colors.Count - 1)//如果还有得变
+
+        if (NightManager.Instance != null)
         {
-            _currentIdx++;
+            NightManager.Instance.OnQuickTick -= TickLight;
         }
-        _time = time;
     }
-    public void Destroy() => WorldTimeMgr.Instance.TimeEvent -= ColorFlow;
+
+    private void HandleDayStarted()
+    {
+        isNightRunning = false;
+        currentColorIndex = 0;
+        lastProgress = 0f;
+
+        if (LightManager.Instance != null)
+        {
+            LightManager.Instance.ApplyDayLightNow();
+        }
+    }
+
+    private void HandleNightStarted()
+    {
+        isNightRunning = true;
+        currentColorIndex = 0;
+        lastProgress = 0f;
+
+        if (LightManager.Instance != null)
+        {
+            Color startColor = GetNightColor(0f);
+            LightManager.Instance.ApplyNightLightNow();
+            LightManager.Instance.SetBaseLight(nightStartIntensity, startColor);
+        }
+    }
+
+    private void HandleNightEnded()
+    {
+        isNightRunning = false;
+        currentColorIndex = 0;
+        lastProgress = 0f;
+
+        if (LightManager.Instance != null)
+        {
+            LightManager.Instance.ApplyDayLightNow();
+        }
+    }
+
+    private void TickLight()
+    {
+        if (!isNightRunning) return;
+        if (NightManager.Instance == null) return;
+        if (LightManager.Instance == null) return;
+        if (!NightManager.Instance.IsActive) return;
+
+        float progress = 0f;
+        if (NightManager.Instance.NightDuration > 0f)
+        {
+            progress = NightManager.Instance.CurrentNightTime / NightManager.Instance.NightDuration;
+        }
+
+        progress = Mathf.Clamp01(progress);
+
+        // 新一轮夜晚重置
+        if (progress < lastProgress)
+        {
+            currentColorIndex = 0;
+        }
+
+        Color baseColor = GetNightColor(progress);
+        float baseIntensity = EvaluateNightIntensity(progress);
+
+        LightManager.Instance.SetBaseLight(baseIntensity, baseColor);
+
+        lastProgress = progress;
+    }
+
+    private Color GetNightColor(float progress)
+    {
+        if (nightColors == null || nightColors.Count == 0)
+        {
+            return Color.white;
+        }
+
+        if (nightColors.Count == 1)
+        {
+            return nightColors[0];
+        }
+
+        while (currentColorIndex < nightColors.Count - 2 &&
+               progress > (float)(currentColorIndex + 1) / (nightColors.Count - 1))
+        {
+            currentColorIndex++;
+        }
+
+        float sectionStart = (float)currentColorIndex / (nightColors.Count - 1);
+        float sectionEnd = (float)(currentColorIndex + 1) / (nightColors.Count - 1);
+
+        float localT = 0f;
+        if (sectionEnd > sectionStart)
+        {
+            localT = (progress - sectionStart) / (sectionEnd - sectionStart);
+        }
+
+        return Color.Lerp(nightColors[currentColorIndex], nightColors[currentColorIndex + 1], localT);
+    }
+
+    private float EvaluateNightIntensity(float progress)
+    {
+        progress = Mathf.Clamp01(progress);
+
+        // 亮 -> 暗 -> 亮
+        if (progress <= 0.5f)
+        {
+            float t = progress / 0.5f;
+            return Mathf.Lerp(nightStartIntensity, nightMidIntensity, t);
+        }
+        else
+        {
+            float t = (progress - 0.5f) / 0.5f;
+            return Mathf.Lerp(nightMidIntensity, nightEndIntensity, t);
+        }
+    }
 }
