@@ -11,6 +11,7 @@ public abstract class PlayerStateBase : IState
     protected PlayableAnimService _animCtrl;
     protected PlayerConfig _cfg;
     protected PlayerAnimConfig _animCfg;
+    protected PlayerAudioConfig _audioCfg;
     public PlayerStateBase(PlayerStateMachine stateMachine)
     {
         _stateMachine = stateMachine;
@@ -19,6 +20,7 @@ public abstract class PlayerStateBase : IState
         _cfg = stateMachine.Player.Config;
 
         _animCfg = _cfg.AnimConfig;
+        _audioCfg = _cfg.AudioConfig;
 
         _inputService = InputMgr.Instance;
     }
@@ -32,7 +34,7 @@ public abstract class PlayerStateBase : IState
     {
     }
 
-    public virtual void OnUpdate()
+    public virtual void OnUpdate(float deltaTime)
     {
         UpdatePlayerFace();
         Move();

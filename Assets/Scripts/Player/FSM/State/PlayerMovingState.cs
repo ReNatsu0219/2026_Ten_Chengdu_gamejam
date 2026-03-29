@@ -3,8 +3,6 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovingState : PlayerStateBase
 {
-    private float _aclTimer;
-
     private AnimationClip _animFront;
     private AnimationClip _animBack;
     private AnimationClip _animLeft;
@@ -26,11 +24,12 @@ public class PlayerMovingState : PlayerStateBase
         RemoveCallbacks();
     }
 
-    public override void OnUpdate()
+    public override void OnUpdate(float deltaTime)
     {
-        base.OnUpdate();
+        base.OnUpdate(deltaTime);
 
         PlayAnimOnFace();
+        PlayStepSFX(deltaTime);
     }
 
     private void RegisterAnimCtrl()
@@ -60,6 +59,15 @@ public class PlayerMovingState : PlayerStateBase
             case ECharacterFace.Right:
                 _animCtrl.PlayAnimation(_animRight);
                 break;
+        }
+    }
+    private void PlayStepSFX(float deltaTime)
+    {
+        _reusableData.StepTimer += deltaTime;
+        if (_reusableData.StepTimer >= _audioCfg.StepInterval)
+        {
+            AudioMgr.Instance.PlayNormalSFX(_audioCfg.Step, _stateMachine.Player.transform.position);
+            _reusableData.StepTimer = 0f;
         }
     }
 

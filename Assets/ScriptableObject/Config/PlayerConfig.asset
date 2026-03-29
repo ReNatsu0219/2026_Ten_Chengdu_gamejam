@@ -12,6 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8288fa66c0e900642b34c9a1a4b46275, type: 3}
   m_Name: PlayerConfig
   m_EditorClassIdentifier: 
+  <AudioConfig>k__BackingField:
+    <Step>k__BackingField:
+    - {fileID: 8300000, guid: 07fec0151fa21c44493c6314a53cbbed, type: 3}
+    - {fileID: 8300000, guid: 32a3eeaf58726864dbe7aad5d8edd06d, type: 3}
+    <StepInterval>k__BackingField: 1
   <BaseSpeed>k__BackingField: 2
   <AnimConfig>k__BackingField:
     <IdleAnim_Front>k__BackingField: {fileID: 7400000, guid: 49a5d91494826f54b85eb8c0f81c74ad, type: 2}

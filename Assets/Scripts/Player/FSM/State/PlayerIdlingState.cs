@@ -25,9 +25,9 @@ public class PlayerIdlingState : PlayerStateBase
         RemoveCallbacks();
     }
 
-    public override void OnUpdate()
+    public override void OnUpdate(float deltaTime)
     {
-        base.OnUpdate();
+        base.OnUpdate(deltaTime);
     }
 
     private void RegisterAnimCtrl()

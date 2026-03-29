@@ -21,7 +21,7 @@ public class PlayerCtrl : MonoBehaviour
     }
     void Update()
     {
-        _stateMachine?.OnUpdate();
+        _stateMachine?.OnUpdate(Time.deltaTime);
     }
     void OnDestroy()
     {

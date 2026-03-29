@@ -8,8 +8,8 @@ public abstract class StateMachineBase
         _currentState = newState;
         _currentState?.OnEnter();
     }
-    public void OnUpdate()
+    public void OnUpdate(float deltaTime)
     {
-        _currentState?.OnUpdate();
+        _currentState?.OnUpdate(deltaTime);
     }
 }
