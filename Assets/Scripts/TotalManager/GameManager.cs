@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+
 public enum GamePhase
 {
     Menu,
@@ -22,11 +22,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int targetDay = 5;
 
     [Header("游戏资源")]
-    [SerializeField] private int currentPower = 0;    //当前的可分配电量
-    [SerializeField] private int dailyPower = 8;    //每天额外获得的电量
-    [SerializeField] private int maxPower = 12;     //最多拥有的电量
-    [SerializeField] private int allocatedPower = 0;    //当天已经分配的电量
+    [SerializeField] private int currentPower = 0;
+    [SerializeField] private int dailyPower = 8;
+    [SerializeField] private int maxPower = 12;
+    [SerializeField] private int allocatedPower = 0;
 
+    [Header("过渡参数")]
+    [SerializeField] private float phaseTransitionDuration = 2f;
+
+    private bool isTransitioning = false;
 
     public GamePhase CurrentPhase => currentPhase;
     public int CurrentDay => currentDay;
@@ -41,78 +45,152 @@ public class GameManager : MonoBehaviour
     public bool IsTransition => currentPhase == GamePhase.Transition;
     public bool IsGameOver => currentPhase == GamePhase.GameOver;
 
-    public event Action OnDayStarted;   //白天开始事件
-    public event Action OnDayEnded; //白天结束事件
-    public event Action OnNightStarted; //夜晚开始事件
-    public event Action OnNightEnded;   //夜晚结束事件
-    public event Action OnPlayerDead;   //玩家死亡事件
-    public event Action OnNightClear;  //通关一天的事件
+    public event Action OnDayStarted;
+    public event Action OnDayEnded;
+    public event Action OnNightStarted;
+    public event Action OnNightEnded;
+    public event Action OnPlayerDead;
+    public event Action OnNightClear;
 
     private void Awake()
     {
-        if(Instance !=null && Instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
+
         Instance = this;
+        currentPhase = GamePhase.Menu;
     }
 
-    public void StartDay()
+    private void Start()
     {
-        if (currentPhase == GamePhase.Day) return;
-
-        currentPhase = GamePhase.Day;
-        OnDayStarted?.Invoke();
-
-        currentPower += 8;
-        if (currentPower > maxPower) currentPower = maxPower;
+        EnterDayImmediate();
+        currentPower = dailyPower;
     }
 
-    public void EndDay()
+
+    public void SwitchDayToNight()
     {
-        if(currentPhase != GamePhase.Day) return;
+        if (currentPhase != GamePhase.Day || isTransitioning) return;
+        StartCoroutine(DayToNightRoutine());
+    }
+
+    public void SwitchNightToDay()
+    {
+        if (currentPhase != GamePhase.Night || isTransitioning) return;
+        StartCoroutine(NightToDayRoutine());
+    }
+
+
+    private IEnumerator DayToNightRoutine()
+    {
+        PlayerCtrl player = FindObjectOfType<PlayerCtrl>();
+        player?.SetControlEnabled(false);
+
+        isTransitioning = true;
 
         currentPhase = GamePhase.Transition;
         OnDayEnded?.Invoke();
-    }
 
-    public void StartNight()
-    {
-        if(currentPhase == GamePhase.Night) return;
+        LightManager.Instance?.FadeToBlack(phaseTransitionDuration);
+        yield return new WaitForSeconds(phaseTransitionDuration);
 
         currentPhase = GamePhase.Night;
+        LightManager.Instance?.ApplyNightLightNow();
         OnNightStarted?.Invoke();
+
+        LightManager.Instance?.FadeFromBlack(phaseTransitionDuration);
+        yield return new WaitForSeconds(phaseTransitionDuration);
+
+        player?.SetControlEnabled(true);
+        isTransitioning = false;
     }
 
-    public void EndNight()
+    private IEnumerator NightToDayRoutine()
     {
-        if (currentPhase != GamePhase.Night) return;
+        isTransitioning = true;
+
+        PlayerCtrl player = FindObjectOfType<PlayerCtrl>();
+        player?.SetControlEnabled(false);
+
 
         currentPhase = GamePhase.Transition;
         OnNightEnded?.Invoke();
+
+        LightManager.Instance?.FadeToBlack(phaseTransitionDuration);
+        yield return new WaitForSeconds(phaseTransitionDuration);
+
+        currentPhase = GamePhase.Day;
+        LightManager.Instance?.ApplyDayLightNow();
+        OnDayStarted?.Invoke();
+
+        LightManager.Instance?.FadeFromBlack(phaseTransitionDuration);
+        yield return new WaitForSeconds(phaseTransitionDuration);
+
+        player?.SetControlEnabled(true);
+        isTransitioning = false;
+    }
+
+
+    private void EnterDayImmediate()
+    {
+        currentPhase = GamePhase.Day;
+        LightManager.Instance?.ApplyDayLightNow();
+        OnDayStarted?.Invoke();
+    }
+
+    private void EnterNightImmediate()
+    {
+        currentPhase = GamePhase.Night;
+        LightManager.Instance?.ApplyNightLightNow();
+        OnNightStarted?.Invoke();
+    }
+
+
+    public void EndDay()
+    {
+        SwitchDayToNight();
     }
 
     public void NightClear()
     {
         OnNightClear?.Invoke();
+
+        if (currentDay < targetDay)
+        {
+            currentDay++;
+            SwitchNightToDay();
+        }
+        else
+        {
+            currentPhase = GamePhase.Victory;
+            // 这里放通关逻辑
+        }
     }
 
     public void PlayerDead(string deathtype)
     {
         OnPlayerDead?.Invoke();
-        Debug.Log("玩家死亡："+deathtype);
+        Debug.Log("玩家死亡：" + deathtype);
+
+        SwitchNightToDay();
     }
 
     public void PowerSet(int value)
     {
-        if (value > maxPower || value < 0) return;
+        if (value > maxPower || value < 0)
+        {
+            currentPower = maxPower;
+            return;
+        }
         currentPower = value;
     }
 
     public void PowerDown()
     {
-        if(currentPower<=0) return;
+        if (currentPower <= 0) return;
         currentPower--;
     }
 
@@ -120,16 +198,5 @@ public class GameManager : MonoBehaviour
     {
         if (currentPower >= maxPower) return;
         currentPower++;
-    }
-
-    //调试用
-    private void Start()
-    {
-        //StartNight();
-    }
-
-    private void Update()
-    {
-        
     }
 }

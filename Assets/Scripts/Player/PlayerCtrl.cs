@@ -33,7 +33,7 @@ public class PlayerCtrl : MonoBehaviour
     {
         if (!canControl) return;
 
-        _stateMachine?.OnUpdate();
+        _stateMachine?.OnUpdate(Time.deltaTime);
     }
     void OnDestroy()
     {

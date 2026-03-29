@@ -48,8 +48,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spriteRenderer: {fileID: 7178725429836276777}
   triggerCollider: {fileID: 6532581094640215216}
-  frameA: {fileID: 21300000, guid: d03991f0d664af94ba7c5cea7a34507b, type: 3}
-  frameB: {fileID: 21300000, guid: 45ada727b42829443b1dc6d4b47472ff, type: 3}
+  frameA: {fileID: 21300000, guid: ccdfd699101bf254c849d0bea65f6d6e, type: 3}
+  frameB: {fileID: 21300000, guid: 8217336f91fef5045b40879baab4b949, type: 3}
   normalAnimTickInterval: 2
   steppedAnimTickInterval: 1
   moveStep: 0.12
@@ -63,6 +63,9 @@ MonoBehaviour:
   possessTicksPerDay: 2
   possessTicksByNightProgress: 4
   allocatedPowerResist: 1
+  moveSFX: {fileID: 8300000, guid: 5bffbc90a9d5bbe4d8164ca646a40e5e, type: 3}
+  moveSFXEverySteps: 3
+  moveSFXVolume: 1
 --- !u!212 &7178725429836276777
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -104,12 +107,12 @@ SpriteRenderer:
   m_SortingLayerID: -730987207
   m_SortingLayer: 3
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: d03991f0d664af94ba7c5cea7a34507b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: ccdfd699101bf254c849d0bea65f6d6e, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 16.54, y: 11.02}
+  m_Size: {x: 27.78, y: 18.501915}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -147,6 +150,6 @@ CircleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0.7121879}
+  m_Offset: {x: 0.004103631, y: 0.6576809}
   serializedVersion: 2
-  m_Radius: 1.5487069
+  m_Radius: 1.0995754

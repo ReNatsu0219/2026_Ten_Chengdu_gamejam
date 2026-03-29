@@ -7,4 +7,5 @@ public class PlayerAudioConfig
 {
     [field: SerializeField] public List<AudioClip> Step { get; private set; }
     [field: SerializeField] public float StepInterval { get; private set; }
+    [field: SerializeField] public float StepVolume { get; private set; }
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class BedFacility : Facilitybase
@@ -8,8 +9,11 @@ public class BedFacility : Facilitybase
     [SerializeField] private Sprite emptyBedSprite;
     [SerializeField] private Sprite occupiedBedSprite;
 
+    [Header("“Ù–ß")]
+    [SerializeField] private AudioClip BedInteractDay;
+    [SerializeField] private AudioClip BedInteractNight;
+
     [SerializeField] private bool isPlayerInBed = false;
-    [SerializeField] private PlayerCtrl currentPlayer;
 
     protected override void ObjectAwake()
     {
@@ -22,18 +26,6 @@ public class BedFacility : Facilitybase
             spriteRenderer.sprite = emptyBedSprite;
         }
     }
-
-    public override void OnPlayerEnterRange()
-    {
-        base.OnPlayerEnterRange();
-
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
-        {
-            currentPlayer = playerObj.GetComponent<PlayerCtrl>();
-        }
-    }
-
 
 
     protected override void OnInteract()
@@ -51,12 +43,13 @@ public class BedFacility : Facilitybase
 
     private void HandleDayInteract()
     {
-        GameManager.Instance.EndDay();
-        GameManager.Instance.StartNight();
+        AudioMgr.Instance.PlayNormalSFX(BedInteractDay, this.transform.position,false,null,0.3f);
+        GameManager.Instance.SwitchDayToNight();
     }
 
     private void HandleNightInteract()
     {
+        AudioMgr.Instance.PlayNormalSFX(BedInteractDay, this.transform.position, false, null, 0.3f);
         if (!isPlayerInBed)
         {
             PlayerGoToBed();
@@ -117,11 +110,7 @@ public class BedFacility : Facilitybase
     {
         base.ResetFacility();
 
-        isPlayerInBed = false;
+        if(isPlayerInBed)PlayerLeaveBed();
 
-        if (spriteRenderer != null && emptyBedSprite != null)
-        {
-            spriteRenderer.sprite = emptyBedSprite;
-        }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
@@ -8,6 +9,11 @@ public class LightManager : MonoBehaviour
 
     [Header("全局灯光")]
     [SerializeField] private Light2D worldLight;
+
+    [Header("玩家脚下底光")]
+    [SerializeField] private Light2D playerFootLight;
+    [SerializeField] private float playerBaseIntensity = 1f;
+    [SerializeField] private Color playerBaseColor = Color.white;
 
     [Header("白天灯光")]
     [SerializeField] private float dayIntensity = 1f;
@@ -25,14 +31,14 @@ public class LightManager : MonoBehaviour
     [SerializeField] private int switchIntervalTicks = 1;
 
     [Header("可调闪烁范围")]
-    [SerializeField] private int minFlickerTotalTicks = 8;
-    [SerializeField] private int maxFlickerTotalTicks = 40;
+    [SerializeField] private int minFlickerTotalTicks = 20;
+    [SerializeField] private int maxFlickerTotalTicks = 80;
     [SerializeField] private int minSwitchIntervalTicks = 1;
     [SerializeField] private int maxSwitchIntervalTicks = 4;
 
     [Header("随机闪烁")]
-    [SerializeField] private float darkChance = 1f;    // 每次切到黑的概率
-    [SerializeField] private float brightChance = 1f;  // 每次切到亮的概率
+    [SerializeField] private float darkChance = 1f;
+    [SerializeField] private float brightChance = 1f;
 
     [Header("附加颜色")]
     [SerializeField] private Color redOverlayColor = new Color(1f, 0.75f, 0.75f, 1f);
@@ -50,12 +56,21 @@ public class LightManager : MonoBehaviour
     private int flickerRemainTicks = 0;
     private int switchTickCounter = 0;
 
+    private float fadeMultiplier = 1f;
+    private Coroutine fadeRoutine;
+
+    private bool possessedDarkActive = false;
+
     public bool IsFlickering => isFlickering;
-    public bool IsDark => isDark;
+    public bool IsDark => isDark || possessedDarkActive;
+    public bool IsFullyBlack => fadeMultiplier <= 0.001f;
+    public bool IsPossessedDarkActive => possessedDarkActive;
 
     public event Action OnLightTurnDark;
     public event Action OnLightTurnBright;
     public event Action OnFlickerFinished;
+    public event Action OnFadeToBlackFinished;
+    public event Action OnFadeFromBlackFinished;
 
     private void Awake()
     {
@@ -93,16 +108,23 @@ public class LightManager : MonoBehaviour
         ApplyLight();
     }
 
+    public void SetPlayerFootLight(float intensity, Color color)
+    {
+        playerBaseIntensity = Mathf.Max(0f, intensity);
+        playerBaseColor = color;
+        ApplyLight();
+    }
+
     public void ApplyDayLightNow()
     {
         SetBaseLight(dayIntensity, dayColor);
-        ResetLight();
+        ResetLightStateOnly();
     }
 
     public void ApplyNightLightNow()
     {
         SetBaseLight(nightStartIntensity, nightStartColor);
-        ResetLight();
+        ResetLightStateOnly();
     }
 
     public void SetOverlayColor(Color color)
@@ -123,10 +145,20 @@ public class LightManager : MonoBehaviour
         ApplyLight();
     }
 
+    public void ResetLightStateOnly()
+    {
+        intensityMultiplier = 1f;
+        hasOverlayColor = false;
+        possessedDarkActive = false;
+        ApplyLight();
+    }
+
     public void ResetLight()
     {
         intensityMultiplier = 1f;
         hasOverlayColor = false;
+        fadeMultiplier = 1f;
+        possessedDarkActive = false;
         ApplyLight();
     }
 
@@ -138,6 +170,13 @@ public class LightManager : MonoBehaviour
     public void SetBrightChance(float value)
     {
         brightChance = Mathf.Clamp01(value);
+    }
+
+    // 新增：灯附身时使用
+    public void SetPossessedDark(bool active)
+    {
+        possessedDarkActive = active;
+        ApplyLight();
     }
 
     public void StartFlicker(int totalTicks = -1, int intervalTicks = -1)
@@ -164,6 +203,85 @@ public class LightManager : MonoBehaviour
         switchTickCounter = 0;
 
         ApplyBright();
+    }
+
+    public void FadeToBlack(float duration = 1f)
+    {
+        StartFade(0f, duration, () => OnFadeToBlackFinished?.Invoke());
+    }
+
+    public void FadeFromBlack(float duration = 1f)
+    {
+        StartFade(1f, duration, () => OnFadeFromBlackFinished?.Invoke());
+    }
+
+    public void SetBlackImmediately()
+    {
+        if (fadeRoutine != null)
+        {
+            StopCoroutine(fadeRoutine);
+            fadeRoutine = null;
+        }
+
+        fadeMultiplier = 0f;
+        ApplyLight();
+        OnFadeToBlackFinished?.Invoke();
+    }
+
+    public void RestoreVisibilityImmediately()
+    {
+        if (fadeRoutine != null)
+        {
+            StopCoroutine(fadeRoutine);
+            fadeRoutine = null;
+        }
+
+        fadeMultiplier = 1f;
+        ApplyLight();
+        OnFadeFromBlackFinished?.Invoke();
+    }
+
+    private void StartFade(float targetMultiplier, float duration, Action onFinished)
+    {
+        if (fadeRoutine != null)
+        {
+            StopCoroutine(fadeRoutine);
+        }
+
+        fadeRoutine = StartCoroutine(FadeRoutine(targetMultiplier, duration, onFinished));
+    }
+
+    private IEnumerator FadeRoutine(float targetMultiplier, float duration, Action onFinished)
+    {
+        float startMultiplier = fadeMultiplier;
+
+        if (duration <= 0f)
+        {
+            fadeMultiplier = targetMultiplier;
+            ApplyLight();
+            fadeRoutine = null;
+            onFinished?.Invoke();
+            yield break;
+        }
+
+        float timer = 0f;
+
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+            float t = Mathf.Clamp01(timer / duration);
+            t = Mathf.SmoothStep(0f, 1f, t);
+
+            fadeMultiplier = Mathf.Lerp(startMultiplier, targetMultiplier, t);
+            ApplyLight();
+
+            yield return null;
+        }
+
+        fadeMultiplier = targetMultiplier;
+        ApplyLight();
+        fadeRoutine = null;
+        onFinished?.Invoke();
     }
 
     private void TickFlicker()
@@ -218,9 +336,24 @@ public class LightManager : MonoBehaviour
 
     private void ApplyLight()
     {
-        if (worldLight == null) return;
+        float finalMultiplier = intensityMultiplier;
 
-        worldLight.intensity = baseIntensity * intensityMultiplier;
-        worldLight.color = hasOverlayColor ? overlayColor : baseColor;
+        // 灯被附身时，直接固定到“闪烁暗态”的亮度
+        if (possessedDarkActive)
+        {
+            finalMultiplier = flickerDarkMultiplier;
+        }
+
+        if (worldLight != null)
+        {
+            worldLight.intensity = baseIntensity * finalMultiplier * fadeMultiplier;
+            worldLight.color = hasOverlayColor ? overlayColor : baseColor;
+        }
+
+        if (playerFootLight != null)
+        {
+            playerFootLight.intensity = playerBaseIntensity * fadeMultiplier;
+            playerFootLight.color = playerBaseColor;
+        }
     }
 }

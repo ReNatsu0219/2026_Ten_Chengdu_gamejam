@@ -25,18 +25,24 @@ public class ShadowHandEnemy : MonoBehaviour
     [SerializeField] private float hitDistance = 0.08f;   // 认为碰到设施的距离
 
     [Header("踩压参数")]
-    [SerializeField] private int stompRequiredTicks = 8;  // 需要持续踩住多少个QuickTick才会消失
-    [SerializeField] private int stompDecayPerTick = 1;   // 没踩住时每Tick衰减多少
+    [SerializeField] private int stompRequiredTicks = 8;  // 累计踩住多少个QuickTick才会消失
 
     [Header("消失淡出")]
     [SerializeField] private Color fadeColor = Color.black;
     [SerializeField] private int fadeTicks = 4;
 
     [Header("附身参数")]
-    [SerializeField] private int basePossessTicks = 6;              // 基础附身tick（按EnemySpawnsTick算）
-    [SerializeField] private int possessTicksPerDay = 2;            // 每天增加多少tick
-    [SerializeField] private float possessTicksByNightProgress = 4f;// 夜晚进度最多额外加多少tick
-    [SerializeField] private float allocatedPowerResist = 1f;       // 每点电力抵消多少tick
+    [SerializeField] private int basePossessTicks = 6;               // 基础附身tick（按EnemySpawnsTick算）
+    [SerializeField] private int possessTicksPerDay = 2;             // 每天增加多少tick
+    [SerializeField] private float possessTicksByNightProgress = 4f; // 夜晚进度最多额外加多少tick
+    [SerializeField] private float allocatedPowerResist = 1f;        // 每点电力抵消多少tick
+
+    [Header("移动音效")]
+    [SerializeField] private AudioClip moveSFX;
+    [SerializeField] private int moveSFXEverySteps = 3;   // 每挪动几次播一次
+    [SerializeField] private float moveSFXVolume = 1f;
+
+    private int moveStepCounter = 0;
 
     private Facilitybase targetFacility;
     private Vector3 spawnPosition;
@@ -46,7 +52,7 @@ public class ShadowHandEnemy : MonoBehaviour
     private int animTickCounter = 0;
 
     private int playerContactCount = 0;
-    private int currentStompTicks = 0;
+    private int currentStompTicks = 0; // 当前鬼手自己的累计踩踏进度
 
     private bool isFadingOut = false;
     private int fadeRemainTicks = 0;
@@ -54,6 +60,7 @@ public class ShadowHandEnemy : MonoBehaviour
     private Color originalColor;
 
     public Facilitybase TargetFacility => targetFacility;
+
     public bool IsPlayerStepping
     {
         get
@@ -65,6 +72,7 @@ public class ShadowHandEnemy : MonoBehaviour
             return playerContactCount > 0;
         }
     }
+
     public bool IsAlive => currentState != ShadowHandState.Dead;
 
     public void Init(Facilitybase target)
@@ -92,6 +100,21 @@ public class ShadowHandEnemy : MonoBehaviour
         if (NightManager.Instance != null)
         {
             NightManager.Instance.OnQuickTick += TickQuick;
+        }
+    }
+
+    private void CountMoveAndPlaySFX()
+    {
+        moveStepCounter++;
+
+        if (moveStepCounter < Mathf.Max(1, moveSFXEverySteps))
+            return;
+
+        moveStepCounter = 0;
+
+        if (moveSFX != null)
+        {
+            AudioMgr.Instance.PlayDimensionalSFX(moveSFX, transform.position, false, null, moveSFXVolume);
         }
     }
 
@@ -145,6 +168,12 @@ public class ShadowHandEnemy : MonoBehaviour
             return;
         }
 
+        if (targetFacility.IsPossessed)
+        {
+            SelfDestroy();
+            return;
+        }
+
         if (IsPlayerStepping)
         {
             currentState = ShadowHandState.Recoiling;
@@ -152,12 +181,16 @@ public class ShadowHandEnemy : MonoBehaviour
             return;
         }
 
-        HandleStompDecay();
-
         Vector3 targetPos = targetFacility.transform.position;
         RotateToward(targetPos);
 
+        Vector3 oldPos = transform.position;
         transform.position = Vector3.MoveTowards(transform.position, targetPos, moveStep);
+
+        if (transform.position != oldPos)
+        {
+            CountMoveAndPlaySFX();
+        }
 
         float distance = Vector3.Distance(transform.position, targetPos);
         if (distance <= hitDistance)
@@ -168,7 +201,6 @@ public class ShadowHandEnemy : MonoBehaviour
 
     private void TickRecoil()
     {
-
         if (!IsPlayerStepping)
         {
             currentState = ShadowHandState.Approaching;
@@ -187,15 +219,6 @@ public class ShadowHandEnemy : MonoBehaviour
         }
     }
 
-    private void HandleStompDecay()
-    {
-        currentStompTicks -= stompDecayPerTick;
-        if (currentStompTicks < 0)
-        {
-            currentStompTicks = 0;
-        }
-    }
-
     private void RotateToward(Vector3 targetPos)
     {
         Vector2 dir = (targetPos - transform.position).normalized;
@@ -208,6 +231,12 @@ public class ShadowHandEnemy : MonoBehaviour
     private void HitTarget()
     {
         if (targetFacility == null)
+        {
+            SelfDestroy();
+            return;
+        }
+
+        if (targetFacility.IsPossessed)
         {
             SelfDestroy();
             return;

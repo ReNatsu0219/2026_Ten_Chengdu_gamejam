@@ -21,9 +21,9 @@ public class ShadowHandSpawner : MonoBehaviour
     [Header("生成参数")]
     [SerializeField] private bool isActive = true;
     [SerializeField] private int maxHandCount = 3;
-    [SerializeField] private float baseSpawnRate = 0.01f;
-    [SerializeField] private float spawnRatePerDay = 0.02f;
-    [SerializeField] private float spawnRateByNightProgress = 0.2f;
+    [SerializeField] private float baseSpawnRate = 0.005f;
+    [SerializeField] private float spawnRatePerDay = 0.004f;
+    [SerializeField] private float spawnRateByNightProgress = 0.02f;
 
     private readonly List<ShadowHandEnemy> activeHands = new List<ShadowHandEnemy>();
 
@@ -33,6 +33,14 @@ public class ShadowHandSpawner : MonoBehaviour
         {
             NightManager.Instance.OnEnemySpawnsTick += TrySpawnHand;
         }
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnNightClear += HandleNightFinishedOrPlayerDead;
+            GameManager.Instance.OnPlayerDead += HandleNightFinishedOrPlayerDead;
+            GameManager.Instance.OnNightStarted += HandleNightStarted;
+            GameManager.Instance.OnNightEnded += HandleNightEnded;
+        }
     }
 
     private void OnDisable()
@@ -41,6 +49,49 @@ public class ShadowHandSpawner : MonoBehaviour
         {
             NightManager.Instance.OnEnemySpawnsTick -= TrySpawnHand;
         }
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnNightClear -= HandleNightFinishedOrPlayerDead;
+            GameManager.Instance.OnPlayerDead -= HandleNightFinishedOrPlayerDead;
+            GameManager.Instance.OnNightStarted -= HandleNightStarted;
+            GameManager.Instance.OnNightEnded -= HandleNightEnded;
+        }
+    }
+
+    private void HandleNightStarted()
+    {
+        isActive = true;
+        CleanupNullHands();
+    }
+
+    private void HandleNightEnded()
+    {
+        StopSpawnerAndClearHands();
+    }
+
+    private void HandleNightFinishedOrPlayerDead()
+    {
+        StopSpawnerAndClearHands();
+    }
+
+    private void StopSpawnerAndClearHands()
+    {
+        isActive = false;
+        ClearAllHands();
+    }
+
+    private void ClearAllHands()
+    {
+        CleanupNullHands();
+
+        for (int i = activeHands.Count - 1; i >= 0; i--)
+        {
+            if (activeHands[i] == null) continue;
+            Destroy(activeHands[i].gameObject);
+        }
+
+        activeHands.Clear();
     }
 
     private void TrySpawnHand()
@@ -95,10 +146,11 @@ public class ShadowHandSpawner : MonoBehaviour
             if (facility == null) continue;
             if (!facility.gameObject.activeInHierarchy) continue;
 
+            // 已被附身的设施不再作为目标
+            if (facility.IsPossessed) continue;
+
             validTargets.Add(facility);
         }
-
-        Debug.Log("Valid SpawnPoints Count: " + validTargets.Count);
 
         if (validTargets.Count == 0) return null;
 
@@ -142,7 +194,6 @@ public class ShadowHandSpawner : MonoBehaviour
         Vector2 targetDir = targetPos - mapCenter;
         Vector2 spawnDir = spawnPos - mapCenter;
 
-        // 在目标相对地图中心的反侧
         return Vector2.Dot(spawnDir, targetDir) < 0f;
     }
 
@@ -184,24 +235,4 @@ public class ShadowHandSpawner : MonoBehaviour
     {
         activeHands.RemoveAll(hand => hand == null);
     }
-
-#if UNITY_EDITOR
-    private void OnDrawGizmosSelected()
-    {
-        Vector2 center = GetMapCenter();
-
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireCube(center, centerRegionSize);
-
-        if (spawnPoints != null)
-        {
-            Gizmos.color = Color.magenta;
-            foreach (Transform point in spawnPoints)
-            {
-                if (point == null) continue;
-                Gizmos.DrawSphere(point.position, 0.12f);
-            }
-        }
-    }
-#endif
 }

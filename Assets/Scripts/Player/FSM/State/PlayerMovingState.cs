@@ -66,10 +66,11 @@ public class PlayerMovingState : PlayerStateBase
         _reusableData.StepTimer += deltaTime;
         if (_reusableData.StepTimer >= _audioCfg.StepInterval)
         {
-            AudioMgr.Instance.PlayNormalSFX(_audioCfg.Step, _stateMachine.Player.transform.position);
+            AudioMgr.Instance.PlayNormalSFX(_audioCfg.Step, _stateMachine.Player.transform.position,false,null,0.3f);
             _reusableData.StepTimer = 0f;
         }
     }
+
 
     #region Reusable Methods
     public override void AddCallbacks()

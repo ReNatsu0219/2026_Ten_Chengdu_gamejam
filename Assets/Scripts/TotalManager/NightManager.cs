@@ -14,7 +14,7 @@ public class NightManager : MonoBehaviour
     [Header("刷新间隔")]
     [SerializeField] private float enemySpawnsInterval = 1f;    //敌人刷新间隔
     [SerializeField] private float pcEnergyChangeInterval = 1f;  //电脑掉电的时间间隔
-    [SerializeField] private float quickInterval = 0.2f;    //快速刷新间隔（用于鬼手或者灯）
+    [SerializeField] private float quickInterval = 0.1f;    //快速刷新间隔（用于鬼手或者灯）
 
     [Header("计时器")]
     [SerializeField] private float pcEnergyTimer = 0f;

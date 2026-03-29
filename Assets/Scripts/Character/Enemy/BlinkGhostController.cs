@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class BlinkGhostController : MonoBehaviour
 {
@@ -10,61 +10,75 @@ public class BlinkGhostController : MonoBehaviour
         Warning
     }
 
-    [Header("ÒýÓÃ")]
+    [Header("å¼•ç”¨")]
     [SerializeField] private Transform player;
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Collider2D hitCollider;
 
-    [Header("·¿¼äºÏ·¨ÇøÓò")]
+    [Header("æˆ¿é—´åˆæ³•åŒºåŸŸ")]
     [SerializeField] private Collider2D roomArea;
 
-    [Header("µÆÉèÊ©")]
+    [Header("ç¯è®¾æ–½")]
     [SerializeField] private Facilitybase lightFacility;
 
-    [Header("Éú³É²ÎÊý")]
-    [SerializeField] private float minSpawnDistanceFromPlayer = 3.5f;
+    [Header("ç”Ÿæˆå‚æ•°")]
+    [SerializeField] private float minSpawnDistanceFromPlayer = 2f;
     [SerializeField] private int spawnTryCount = 30;
     [SerializeField] private float spawnDelaySeconds = 3f;
 
-    [Header("Ë¢ÐÂ¸ÅÂÊ")]
-    [SerializeField] private float baseSpawnChance = 0.12f;
-    [SerializeField] private float spawnChancePerDay = 0.05f;
-    [SerializeField] private float spawnChanceByNightProgress = 0.35f;
-    [SerializeField] private float spawnChanceReducePerPower = 0.04f;
+    [Header("åˆ·æ–°æ¦‚çŽ‡")]
+    [SerializeField] private float baseSpawnChance = 0.005f;
+    [SerializeField] private float spawnChancePerDay = 0.008f;
+    [SerializeField] private float spawnChanceByNightProgress = 0.05f;
+    [SerializeField] private float spawnChanceReducePerPower = 0.003f;
 
-    [Header("Ë²ÒÆ»ù´¡²ÎÊý")]
+    [Header("çž¬ç§»åŸºç¡€å‚æ•°")]
     [SerializeField] private float baseBlinkStepMin = 1.0f;
     [SerializeField] private float baseBlinkStepMax = 1.8f;
     [SerializeField] private int blinkEveryDarkCount = 2;
 
-    [Header("Õ¶É±²ÎÊý")]
-    [SerializeField] private float killRange = 1.0f;
-    [SerializeField] private float warningStopDistance = 1.4f;
+    [Header("ç†„ç¯è¿½å‡»å‚æ•°")]
+    [SerializeField] private bool useCustomPossessedTickRate = true;
+    [SerializeField] private int possessedBlinkEveryTicks = 6;
+
+    [Header("æ–©æ€å‚æ•°")]
+    [SerializeField] private float killRange = 1.4f;
+    [SerializeField] private float warningStopDistance = 0.8f;
     [SerializeField] private float warningEscapeDistance = 1.2f;
 
-    [Header("ÉÁË¸»ù´¡²ÎÊý")]
-    [SerializeField] private int baseFlickerTotalTicks = 50;
-    [SerializeField] private int baseFlickerSwitchTicks = 2;
+    [Header("é—ªçƒåŸºç¡€å‚æ•°")]
+    [SerializeField] private int baseFlickerTotalTicks = 25;
+    [SerializeField] private int baseFlickerSwitchTicks = 6;
 
-    [Header("ÊýÖµ³É³¤²ÎÊý")]
-    [SerializeField] private int flickerTicksPerDay = 2;
-    [SerializeField] private float flickerTicksByNightProgress = 6f;
-    [SerializeField] private int flickerTicksReducePerPower = 2;
+    [Header("é—ªçƒé™åˆ¶å‚æ•°")]
+    [SerializeField] private int minFlickerTotalTicks = 20;
+    [SerializeField] private int maxFlickerTotalTicks = 80;
+    [SerializeField] private int minFlickerSwitchTicks = 1;
+    [SerializeField] private int maxFlickerSwitchTicks = 4;
 
-    [SerializeField] private int switchTicksAddPerPower = 1;
-    [SerializeField] private float switchTicksReduceByNightProgress = 1f;
-    [SerializeField] private int switchTicksReducePer2Day = 1;
+    [Header("æ•°å€¼æˆé•¿å‚æ•°")]
+    [SerializeField] private int flickerTicksPerDay = 10;
+    [SerializeField] private float flickerTicksByNightProgress = 20f;
+    [SerializeField] private int flickerTicksReducePerPower = 5;
 
-    [SerializeField] private float blinkDistancePerDay = 0.10f;
-    [SerializeField] private float blinkDistanceByNightProgress = 0.4f;
-    [SerializeField] private float blinkDistanceReducePerPower = 0.10f;
+    [SerializeField] private float switchTicksAddPerPower = 0.5f;
+    [SerializeField] private float switchTicksReduceByNightProgress = 2f;
+    [SerializeField] private float switchTicksReducePer2Day = 0.5f;
 
-    [Header("µÆÉÁËæ»ú²ÎÊý")]
+    [SerializeField] private float blinkDistancePerDay = 0.2f;
+    [SerializeField] private float blinkDistanceByNightProgress = 0.6f;
+    [SerializeField] private float blinkDistanceReducePerPower = 0.07f;
+
+    [Header("ç¯é—ªéšæœºå‚æ•°")]
     [SerializeField] private float darkChance = 0.85f;
     [SerializeField] private float brightChance = 1f;
 
-    [Header("µ÷ÊÔ")]
+    [Header("è°ƒè¯•")]
     [SerializeField] private bool autoStartForTest = false;
+
+    [Header("éŸ³æ•ˆ")]
+    [SerializeField] private AudioClip LightSFX;
+    [SerializeField] private AudioClip GhostSFX;
 
     private GhostState currentState = GhostState.Inactive;
 
@@ -73,6 +87,10 @@ public class BlinkGhostController : MonoBehaviour
 
     private float spawnDelayTimer = 0f;
     private int darkCountSinceSpawn = 0;
+
+    private int activeRemainTicks = 0;
+    private bool usingPossessedDark = false;
+    private int possessedTickCounter = 0;
 
     private void Awake()
     {
@@ -185,10 +203,15 @@ public class BlinkGhostController : MonoBehaviour
 
         spawnDelayTimer = 0f;
         darkCountSinceSpawn = 0;
+        activeRemainTicks = 0;
+        usingPossessedDark = false;
+        possessedTickCounter = 0;
 
         currentState = GhostState.WaitingSpawn;
         SetVisible(false);
         SetColliderEnabled(false);
+
+        AudioMgr.Instance.PlayNormalSFX(LightSFX, this.transform.position, true, "LightNoise");
     }
 
     public void ActivateGhost()
@@ -196,6 +219,8 @@ public class BlinkGhostController : MonoBehaviour
         if (currentState != GhostState.WaitingSpawn) return;
         if (player == null || roomArea == null) return;
         if (LightManager.Instance == null) return;
+
+        AudioMgr.Instance.PlayNormalSFX(GhostSFX, this.transform.position, true, "GhostNoise",0.4f);
 
         int lampPower = GetLampPower();
 
@@ -209,24 +234,48 @@ public class BlinkGhostController : MonoBehaviour
         transform.position = GetRandomSpawnPositionFarFromPlayer();
 
         currentState = GhostState.Active;
-        SetVisible(true);
         SetColliderEnabled(true);
 
         darkCountSinceSpawn = 0;
+        activeRemainTicks = flickerTotalTicks;
+        possessedTickCounter = 0;
 
-        LightManager.Instance.SetDarkChance(darkChance);
-        LightManager.Instance.SetBrightChance(brightChance);
-        LightManager.Instance.StartFlicker(flickerTotalTicks, flickerSwitchTicks);
+        bool lightPossessed = IsLightPossessed();
+        usingPossessedDark = lightPossessed;
+
+        if (lightPossessed)
+        {
+            // ç¯å·²ç»è¢«é™„èº«ï¼ŒLightFacility é‚£è¾¹ä¼šè´Ÿè´£æŠŠæˆ¿é—´åŽ‹åˆ°æš—æ€
+            // è¿™é‡Œä¸è¦å†é¢å¤–è§¦å‘é—ªçƒï¼Œå¦åˆ™ä¼šçŠ¶æ€æ‰“æž¶
+            if (LightManager.Instance.IsFlickering)
+            {
+                LightManager.Instance.StopFlicker();
+            }
+        }
+        else
+        {
+            LightManager.Instance.SetDarkChance(darkChance);
+            LightManager.Instance.SetBrightChance(brightChance);
+            LightManager.Instance.StartFlicker(flickerTotalTicks, flickerSwitchTicks);
+        }
+
+        RefreshVisibilityByLightState();
     }
 
     public void DeactivateGhost()
     {
-        if (LightManager.Instance != null && LightManager.Instance.IsFlickering)
+        if (LightManager.Instance != null)
         {
-            LightManager.Instance.StopFlicker();
+            if (LightManager.Instance.IsFlickering)
+            {
+                LightManager.Instance.StopFlicker();
+            }
         }
 
         SetInactiveState();
+
+        AudioMgr.Instance.StopLoopSFX("LightNoise");
+        AudioMgr.Instance.StopLoopSFX("GhostNoise");
     }
 
     private void SetInactiveState()
@@ -234,20 +283,53 @@ public class BlinkGhostController : MonoBehaviour
         currentState = GhostState.Inactive;
         spawnDelayTimer = 0f;
         darkCountSinceSpawn = 0;
+        activeRemainTicks = 0;
+        usingPossessedDark = false;
+        possessedTickCounter = 0;
         SetVisible(false);
         SetColliderEnabled(false);
     }
 
     private void TickGhost()
     {
-        if (currentState != GhostState.WaitingSpawn) return;
         if (NightManager.Instance == null) return;
 
-        spawnDelayTimer += NightManager.Instance.QuickInterval;
-
-        if (spawnDelayTimer >= spawnDelaySeconds)
+        if (currentState == GhostState.WaitingSpawn)
         {
-            ActivateGhost();
+            spawnDelayTimer += NightManager.Instance.QuickInterval;
+
+            if (spawnDelayTimer >= spawnDelaySeconds)
+            {
+                ActivateGhost();
+            }
+
+            RefreshVisibilityByLightState();
+            return;
+        }
+
+        if (currentState != GhostState.Active && currentState != GhostState.Warning) return;
+
+        RefreshVisibilityByLightState();
+
+        if (usingPossessedDark)
+        {
+            activeRemainTicks--;
+            possessedTickCounter++;
+
+            int tickStep = useCustomPossessedTickRate
+                ? Mathf.Max(1, possessedBlinkEveryTicks)
+                : Mathf.Max(1, blinkEveryDarkCount);
+
+            if (possessedTickCounter >= tickStep)
+            {
+                possessedTickCounter = 0;
+                TryBlink();
+            }
+
+            if (activeRemainTicks <= 0)
+            {
+                DeactivateGhost();
+            }
         }
     }
 
@@ -268,8 +350,32 @@ public class BlinkGhostController : MonoBehaviour
         }
     }
 
+    private void RefreshVisibilityByLightState()
+    {
+        if (currentState != GhostState.Active && currentState != GhostState.Warning)
+        {
+            SetVisible(false);
+            return;
+        }
+
+        if (IsLightPossessed())
+        {
+            SetVisible(false);
+            return;
+        }
+
+        if (LightManager.Instance != null && LightManager.Instance.IsDark)
+        {
+            SetVisible(false);
+            return;
+        }
+
+        SetVisible(true);
+    }
+
     private void HandleLightTurnDark()
     {
+        if (usingPossessedDark) return;
         if (currentState != GhostState.Active && currentState != GhostState.Warning) return;
 
         SetVisible(false);
@@ -287,12 +393,15 @@ public class BlinkGhostController : MonoBehaviour
 
     private void HandleLightTurnBright()
     {
+        if (usingPossessedDark) return;
         if (currentState != GhostState.Active && currentState != GhostState.Warning) return;
-        SetVisible(true);
+
+        RefreshVisibilityByLightState();
     }
 
     private void HandleFlickerFinished()
     {
+        if (usingPossessedDark) return;
         DeactivateGhost();
     }
 
@@ -355,6 +464,11 @@ public class BlinkGhostController : MonoBehaviour
         return lightFacility.AllocatedPower;
     }
 
+    private bool IsLightPossessed()
+    {
+        return lightFacility != null && lightFacility.IsPossessed;
+    }
+
     private float GetSpawnChance()
     {
         float chance = baseSpawnChance;
@@ -392,12 +506,12 @@ public class BlinkGhostController : MonoBehaviour
 
         result -= lampPower * flickerTicksReducePerPower;
 
-        return Mathf.Clamp(result, 10, 36);
+        return Mathf.Clamp(result, minFlickerTotalTicks, maxFlickerTotalTicks);
     }
 
     private int GetFlickerSwitchTicks(int lampPower)
     {
-        int result = baseFlickerSwitchTicks;
+        float result = baseFlickerSwitchTicks;
 
         if (GameManager.Instance != null)
         {
@@ -407,12 +521,12 @@ public class BlinkGhostController : MonoBehaviour
         if (NightManager.Instance != null && NightManager.Instance.NightDuration > 0f)
         {
             float progress = NightManager.Instance.CurrentNightTime / NightManager.Instance.NightDuration;
-            result -= Mathf.RoundToInt(progress * switchTicksReduceByNightProgress);
+            result -= progress * switchTicksReduceByNightProgress;
         }
 
         result += lampPower * switchTicksAddPerPower;
 
-        return Mathf.Clamp(result, 1, 3);
+        return Mathf.RoundToInt(Mathf.Clamp(result, minFlickerSwitchTicks, maxFlickerSwitchTicks));
     }
 
     private Vector2 GetBlinkDistanceRange(int lampPower)

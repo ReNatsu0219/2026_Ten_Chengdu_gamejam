@@ -316,8 +316,10 @@ MonoBehaviour:
   currentNightTime: 0
   enemySpawnsInterval: 1
   pcEnergyChangeInterval: 0.5
+  quickInterval: 0.2
   pcEnergyTimer: 0
   enemySpawnTimer: 0
+  quickTimer: 0
   isActive: 0
   isPlayerOnBed: 0
 --- !u!4 &80710270
@@ -1222,7 +1224,6 @@ MonoBehaviour:
   - {r: 0.02, g: 0.02, b: 0.1, a: 1}
   - {r: 0, g: 0, b: 0, a: 1}
   WorldLight: {fileID: 619394801}
-  _period: 5
 --- !u!1 &927021363
 GameObject:
   m_ObjectHideFlags: 0
@@ -1339,6 +1340,10 @@ MonoBehaviour:
   currentPhase: 1
   currentDay: 1
   targetDay: 5
+  currentPower: 0
+  dailyPower: 8
+  maxPower: 12
+  allocatedPower: 0
 --- !u!4 &949957788
 Transform:
   m_ObjectHideFlags: 0
@@ -1849,6 +1854,8 @@ MonoBehaviour:
   spriteRenderer: {fileID: 0}
   facilityName: 
   allocatedPower: 0
+  possessedColor: {r: 0, g: 0, b: 0, a: 1}
+  possessFadeTicks: 3
   konckerCooldownTimer: 0
   konckerBaseCooldown: 10
   konckerCooldownRange: 5
@@ -2010,13 +2017,18 @@ MonoBehaviour:
   spriteRenderer: {fileID: 0}
   facilityName: 
   allocatedPower: 0
+  possessedColor: {r: 0, g: 0, b: 0, a: 1}
+  possessFadeTicks: 3
   facilityEnergy: 1
   currentStatus: 0
   isCharging: 0
+  isEnemySpawned: 0
   maxEnergy: 1
   energyChargingRate: 0.1
   energyLosingRate: 0.01
   deadlineEnergy: -3
+  baseEnemySpawnRate: 0.05
+  enemyCooldown: 10
 --- !u!212 &1766041051
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -2510,7 +2522,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 68f639748fd12b54f995f32f60f7166c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: cc4fa5b4fb9270c49837962282abc4c6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

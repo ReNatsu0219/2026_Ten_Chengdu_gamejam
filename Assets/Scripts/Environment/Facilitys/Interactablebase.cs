@@ -46,6 +46,10 @@ public abstract class Interactablebase : MonoBehaviour
 
     public virtual void OnDayEnd() { }
 
+    public virtual void OnNightClear() { }
+
+    public virtual void OnPlayerDead() { }
+
     public virtual void SetDisabled(bool value)
     {
         isDisabled = value;
@@ -86,7 +90,7 @@ public abstract class Interactablebase : MonoBehaviour
         ObjectAwake();
     }
 
-    private void Start()
+    private void OnEnable()
     {
         if (GameManager.Instance != null)
         {
@@ -94,6 +98,9 @@ public abstract class Interactablebase : MonoBehaviour
             GameManager.Instance.OnNightEnded += OnNightEnd;
             GameManager.Instance.OnDayStarted += OnDayStart;
             GameManager.Instance.OnDayEnded += OnDayEnd;
+            GameManager.Instance.OnNightClear += OnNightClear;
+            GameManager.Instance.OnPlayerDead += OnPlayerDead;
+            Debug.Log("所有可交互物体已订阅昼夜切换事件");
         }
     }
 
@@ -113,6 +120,8 @@ public abstract class Interactablebase : MonoBehaviour
             GameManager.Instance.OnNightEnded -= OnNightEnd;
             GameManager.Instance.OnDayStarted -= OnDayStart;
             GameManager.Instance.OnDayEnded -= OnDayEnd;
+            GameManager.Instance.OnNightClear -= OnNightClear;
+            GameManager.Instance.OnPlayerDead -= OnPlayerDead;
         }
     }
 }

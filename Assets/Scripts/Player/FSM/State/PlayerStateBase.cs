@@ -60,11 +60,19 @@ public abstract class PlayerStateBase : IState
 
     protected virtual void Move()
     {
+        /*
         Vector2 currentVelocity = _stateMachine.Player.Rb.velocity;
         Vector2 moveDirection = _reusableData.InputDir;
         float moveSpeed = _cfg.BaseSpeed * _reusableData.SpeedMult;
 
         _stateMachine.Player.Rb.AddForce(moveSpeed * moveDirection - currentVelocity, ForceMode2D.Force);
+        */
+
+        //取消移动惯性
+        Vector2 moveDirection = _reusableData.InputDir;
+        float moveSpeed = _cfg.BaseSpeed * _reusableData.SpeedMult;
+
+        _stateMachine.Player.Rb.velocity = moveDirection * moveSpeed;
     }
     private void UpdatePlayerFace()
     {
