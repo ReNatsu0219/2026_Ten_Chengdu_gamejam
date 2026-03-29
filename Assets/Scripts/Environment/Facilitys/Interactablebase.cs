@@ -59,7 +59,7 @@ public abstract class Interactablebase : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("PlayerInteract"))
+        if (other.CompareTag("Player"))
         {
             OnPlayerEnterRange();
         }
@@ -67,7 +67,7 @@ public abstract class Interactablebase : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        if (other.CompareTag("Playernteract"))
+        if (other.CompareTag("Player"))
         {
             OnPlayerExitRange();
         }
@@ -94,6 +94,14 @@ public abstract class Interactablebase : MonoBehaviour
             GameManager.Instance.OnNightEnded += OnNightEnd;
             GameManager.Instance.OnDayStarted += OnDayStart;
             GameManager.Instance.OnDayEnded += OnDayEnd;
+        }
+    }
+
+    private void Update()
+    {
+        if (InputMgr.Instance != null && InputMgr.Instance.InteractPressed)
+        {
+            TryInteract();
         }
     }
 
