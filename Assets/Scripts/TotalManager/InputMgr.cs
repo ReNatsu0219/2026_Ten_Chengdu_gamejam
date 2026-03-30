@@ -26,4 +26,12 @@ public class InputMgr : MonoSingleton<InputMgr>
     {
         InputMap.Disable();
     }
+    public void DisableGameplayInput()
+    {
+        InputMap.Disable();
+    }
+    public void EnableGameplayInput()
+    {
+        InputMap.Enable();
+    }
 }

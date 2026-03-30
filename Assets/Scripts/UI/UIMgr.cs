@@ -5,34 +5,44 @@ using Cysharp.Threading.Tasks;
 
 public class UIMgr : MonoSingleton<UIMgr>
 {
-    [field: SerializeField] public Image OperationPanel;
-    [field: SerializeField] public Image OperationPanelFrame;
-    [field: SerializeField] public RectTransform ThinkingIcon;
-    [field: SerializeField] public RectTransform CurrentPowerWindow { get; private set; }
+    [SerializeField] private Image _operationPanel;
+    [SerializeField] private Image _operationPanelFrame;
+    [SerializeField] private RectTransform _thinkingIcon;
+    [SerializeField] public RectTransform CurrentPowerWindow { get; private set; }
     [SerializeField] private CurrentPowerWindowUI currentPowerWindowUI;
+
+    [SerializeField] private GameObject _pausePanel;
+    [SerializeField] private Button _settingsBtn;
+    [SerializeField] private Button _backBtn;
+    [SerializeField] private Button _exitBtn;
+
+    [SerializeField] private GameObject _gameOverPanel;
+    [SerializeField] private GameObject _gameOverMask;
 
     private Vector3 _currentPowerWindowPos;
     private Vector3 _thinkIconPos;
 
     void Start()
     {
-        _thinkIconPos = ThinkingIcon.transform.localPosition;
+        _thinkIconPos = _thinkingIcon.transform.localPosition;
+        _settingsBtn.onClick.AddListener(TogglePausePanel);
+        _backBtn.onClick.AddListener(TogglePausePanel);
         _currentPowerWindowPos = CurrentPowerWindow.transform.localPosition;
     }
-
-    public void OperationPanelFadeIn(CanvasGroup canvasGroup, RectTransform rectTransform, float xPos, float yPos = 0f, float duration = 1f)
+    #region Operation Panel
+    public async UniTaskVoid OperationPanelFadeIn(CanvasGroup canvasGroup, RectTransform rectTransform, float xPos, float yPos = 0f, float duration = 1f)
     {
-        if (OperationPanel.gameObject.activeSelf) return;
+        if (_operationPanel.gameObject.activeSelf) return;
 
-        OperationPanel.gameObject.SetActive(true);
+        _operationPanel.gameObject.SetActive(true);
         canvasGroup.gameObject.SetActive(true);
         CurrentPowerWindow.gameObject.SetActive(true);
 
-        OperationPanel.DOBlendableColor(new Color(0f, 0f, 0f, 0.9f), duration * 0.5f);
-        OperationPanelFrame.DOFade(1f, 0.5f * duration);
+        _operationPanel.DOBlendableColor(new Color(0f, 0f, 0f, 0.9f), duration * 0.5f);
+        _operationPanelFrame.DOFade(1f, 0.5f * duration);
 
-        ThinkingIcon.transform.localPosition = new Vector3(_thinkIconPos.x, -1000f, 0f);
-        ThinkingIcon.DOAnchorPos(
+        _thinkingIcon.transform.localPosition = new Vector3(_thinkIconPos.x, -1000f, 0f);
+        _thinkingIcon.DOAnchorPos(
             new Vector2(_thinkIconPos.x, _thinkIconPos.y),
             duration
         ).SetEase(GetRandomEase());
@@ -44,17 +54,21 @@ public class UIMgr : MonoSingleton<UIMgr>
             new Vector2(_currentPowerWindowPos.x, _currentPowerWindowPos.y),
             duration
         ).SetEase(GetRandomEase());
+
+        await UniTask.WaitForSeconds(duration);
+        _thinkingIcon.GetComponent<IconSwitch>().IsTriggered = true;
     }
 
     public void OperationPanelFadeOut(CanvasGroup canvasGroup, RectTransform rectTransform, float xPos, float yPos = 0f, float duration = 0.75f)
     {
-        if (!OperationPanel.gameObject.activeSelf) return;
+        if (!_operationPanel.gameObject.activeSelf) return;
 
-        OperationPanel.DOBlendableColor(new Color(0f, 0f, 0f, 0f), duration * 0.5f);
-        OperationPanelFrame.DOFade(0f, 0.5f * duration);
+        _thinkingIcon.GetComponent<IconSwitch>().IsTriggered = false;
+        _operationPanel.DOBlendableColor(new Color(0f, 0f, 0f, 0f), duration * 0.5f);
+        _operationPanelFrame.DOFade(0f, 0.5f * duration);
 
-        ThinkingIcon.transform.localPosition = new Vector3(_thinkIconPos.x, _thinkIconPos.y, 0f);
-        ThinkingIcon.DOAnchorPos(
+        _thinkingIcon.transform.localPosition = new Vector3(_thinkIconPos.x, _thinkIconPos.y, 0f);
+        _thinkingIcon.DOAnchorPos(
             new Vector2(_thinkIconPos.x, -1000f),
             duration
         ).SetEase(GetRandomEase());
@@ -69,11 +83,57 @@ public class UIMgr : MonoSingleton<UIMgr>
 
         GameObject[] gos = {
             canvasGroup.gameObject,
-            OperationPanel.gameObject,
+            _operationPanel.gameObject,
             CurrentPowerWindow.gameObject
         };
         WaitFadeOutThenInavtivate(gos, duration).Forget();
     }
+    #endregion
+
+    #region Pause Panel
+    private void TogglePausePanel()
+    {
+        if (_pausePanel.activeInHierarchy)
+        {
+            _pausePanel.SetActive(false);
+            InputMgr.Instance.EnableGameplayInput();
+            Time.timeScale = 1.0f;
+        }
+        else
+        {
+            _pausePanel.SetActive(true);
+            Time.timeScale = 0.00f;
+            InputMgr.Instance.DisableGameplayInput();
+        }
+    }
+    #endregion
+
+    #region GameOver Panel
+    public void Dead()
+    {
+        FadeInGameOverPanel().Forget();
+    }
+    public async UniTaskVoid FadeInGameOverPanel(float duration = 1f)
+    {
+        _gameOverPanel.SetActive(true);
+
+        _gameOverPanel.GetComponent<Image>().DOBlendableColor(new Color(1f, 0f, 0f, 0.9f), duration * 0.5f);
+        _gameOverMask.GetComponent<Image>().DOBlendableColor(new Color(1f, 0f, 0f, 1f), duration * 0.25f);
+
+        await UniTask.WaitForSeconds(duration * 0.25f);
+
+        _gameOverMask.GetComponent<Image>().DOBlendableColor(new Color(0.5f, 0f, 0f, 0.5f), duration * 0.25f);
+    }
+    public async UniTaskVoid FadeOutGameOverPanel(float duration = 0.5f)
+    {
+        _gameOverPanel.GetComponent<Image>().DOBlendableColor(new Color(0f, 0f, 0f, 0.8f), duration);
+        _gameOverMask.GetComponent<Image>().DOBlendableColor(new Color(0.5f, 0f, 0f, 0.5f), duration);
+
+        await UniTask.WaitForSeconds(duration);
+
+        _gameOverPanel.SetActive(false);
+    }
+    #endregion
 
     public void PanelJumpFadeIn(CanvasGroup canvasGroup, RectTransform rectTransform, float xPos, float yPos = 0f, float duration = 1f)
     {
