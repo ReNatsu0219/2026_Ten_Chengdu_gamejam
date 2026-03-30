@@ -40,6 +40,16 @@ public class PlayerCtrl : MonoBehaviour
         AnimCtrl.Destroy();
     }
     #endregion
+    public void Dead()
+    {
+        SetControlEnabled(false);
+        _stateMachine.ChangeState(_stateMachine.DeadState);
+    }
+    public void Respawn()
+    {
+        SetControlEnabled(true);
+        _stateMachine.ChangeState(_stateMachine.IdlingState);
+    }
 
     public void SetControlEnabled(bool value)
     {

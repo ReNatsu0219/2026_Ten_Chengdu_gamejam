@@ -5,6 +5,7 @@ public class PlayerStateMachine : StateMachineBase
 
     public PlayerIdlingState IdlingState { get; private set; }
     public PlayerMovingState MovingState { get; private set; }
+    public PlayerDeadState DeadState { get; private set; }
     public PlayerStateMachine(PlayerCtrl player)
     {
         Player = player;
@@ -12,6 +13,7 @@ public class PlayerStateMachine : StateMachineBase
 
         IdlingState = new PlayerIdlingState(this);
         MovingState = new PlayerMovingState(this);
+        DeadState = new PlayerDeadState(this);
 
         Init();
     }

@@ -21,6 +21,9 @@ public class UIMgr : MonoSingleton<UIMgr>
 
     [SerializeField] private GameObject _gameOverPanel;
     [SerializeField] private GameObject _gameOverMask;
+    [SerializeField] private RectTransform _restartBtn;
+    [SerializeField] private RectTransform _gameOverExitBtn;
+    [SerializeField] private RectTransform _gameOverTitle;
 
     private Vector3 _currentPowerWindowPos;
     private Vector3 _thinkIconPos;
@@ -37,7 +40,7 @@ public class UIMgr : MonoSingleton<UIMgr>
         if (CurrentPowerWindow != null)
             _currentPowerWindowPos = CurrentPowerWindow.transform.localPosition;
         else
-            Debug.LogError("CurrentPowerWindow Ã»ÉèÖÃ");
+            Debug.LogError("CurrentPowerWindow Ã»ï¿½ï¿½ï¿½ï¿½");
     }
 
     #region Operation Panel
@@ -144,6 +147,12 @@ public class UIMgr : MonoSingleton<UIMgr>
         maskImage.DOColor(new Color(1f, 0f, 0f, 1f), duration);
 
         await UniTask.WaitForSeconds(duration);
+
+        PanelJumpFadeIn(_gameOverTitle.GetComponent<CanvasGroup>(), _gameOverTitle, 0f, _gameOverTitle.localPosition.y, duration * 0.5f);
+        await UniTask.WaitForSeconds(duration * 0.5f);
+        PanelJumpFadeIn(_restartBtn.GetComponent<CanvasGroup>(), _restartBtn, 0f, _restartBtn.localPosition.y, duration * 0.5f);
+        await UniTask.WaitForSeconds(duration * 0.5f);
+        PanelJumpFadeIn(_gameOverExitBtn.GetComponent<CanvasGroup>(), _gameOverExitBtn, 0f, _gameOverExitBtn.localPosition.y, duration * 0.5f);
     }
 
     public async UniTaskVoid FadeOutGameOverPanel(float duration = 0.5f)
@@ -197,7 +206,7 @@ public class UIMgr : MonoSingleton<UIMgr>
 
         screenPanel.SetActive(false);
 
-        // »Ö¸´ÔÝÍ£°´Å¥
+        // ï¿½Ö¸ï¿½ï¿½ï¿½Í£ï¿½ï¿½Å¥
         _settingsBtn.interactable = true;
     }
 

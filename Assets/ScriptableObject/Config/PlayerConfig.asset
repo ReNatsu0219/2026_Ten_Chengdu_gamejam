@@ -28,3 +28,4 @@ MonoBehaviour:
     <MoveAnim_Back>k__BackingField: {fileID: 7400000, guid: 1bf3c517eae880b468c136de58d91375, type: 2}
     <MoveAnim_Left>k__BackingField: {fileID: 7400000, guid: dcb8b4dc99f38a84ea05998951bfdc9d, type: 2}
     <MoveAnim_Right>k__BackingField: {fileID: 7400000, guid: d0036092cfecdb14daf7e8b6e66282fe, type: 2}
+    <Die>k__BackingField: {fileID: 7400000, guid: bf5fda97331dfa24f8bcbfaeb38f6305, type: 2}
