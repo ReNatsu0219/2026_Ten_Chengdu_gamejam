@@ -134,7 +134,7 @@ public class DoorFacility : Facilitybase
 
         currentStatus = DoorStatus.Knocking;
         currentKnockDuration = GetCurrentKnockDuration();
-        AudioMgr.Instance.PlayDimensionalSFX(KnockSFX, this.transform.position, false, null, 1, currentKnockDuration);
+        AudioMgr.Instance.PlayDimensionalSFX(KnockSFX, this.transform.position, false, null, 10f, currentKnockDuration);
         StartCoroutine(KnockRoutine());
     }
 

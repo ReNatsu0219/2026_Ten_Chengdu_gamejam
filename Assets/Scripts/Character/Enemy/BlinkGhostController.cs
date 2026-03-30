@@ -54,7 +54,7 @@ public class BlinkGhostController : MonoBehaviour
     [SerializeField] private int minFlickerTotalTicks = 20;
     [SerializeField] private int maxFlickerTotalTicks = 80;
     [SerializeField] private int minFlickerSwitchTicks = 1;
-    [SerializeField] private int maxFlickerSwitchTicks = 4;
+    [SerializeField] private int maxFlickerSwitchTicks = 3;
 
     [Header("数值成长参数")]
     [SerializeField] private int flickerTicksPerDay = 10;

@@ -66,12 +66,40 @@ public class ComputerFacility : Facilitybase
     protected override void ObjectAwake()
     {
         base.ObjectAwake();
-        if(GameManager.Instance != null)
-        {
-           
-        }
+
+        SubscribeEvents();
+
         isDisabled = false;
         isInteractable = true;
+    }
+
+    private void OnDisable()
+{
+    UnsubscribeEvents();
+}
+
+    private void SubscribeEvents()
+    {
+        if (GameManager.Instance == null) return;
+
+        UnsubscribeEvents();
+
+        GameManager.Instance.OnDayStarted += OnDayStart;
+        GameManager.Instance.OnDayEnded += OnDayEnd;
+        GameManager.Instance.OnNightStarted += OnNightStart;
+        GameManager.Instance.OnNightEnded += OnNightEnd;
+        GameManager.Instance.OnNightClear += OnNightClear;
+    }
+
+    private void UnsubscribeEvents()
+    {
+        if (GameManager.Instance == null) return;
+
+        GameManager.Instance.OnDayStarted -= OnDayStart;
+        GameManager.Instance.OnDayEnded -= OnDayEnd;
+        GameManager.Instance.OnNightStarted -= OnNightStart;
+        GameManager.Instance.OnNightEnded -= OnNightEnd;
+        GameManager.Instance.OnNightClear -= OnNightClear;
     }
 
     public void SetEnergy(int value)
@@ -84,6 +112,7 @@ public class ComputerFacility : Facilitybase
         facilityEnergy += rate;
         if(facilityEnergy>maxEnergy)facilityEnergy = maxEnergy;
     }
+
 
     private void EnergyLosing(float rate)
     {
@@ -225,10 +254,17 @@ public class ComputerFacility : Facilitybase
 
         SetCharging(false);
         UIMgr.Instance.HideScreenPanel();
+        Debug.Log("ComputerFacility OnNightEnd");
         Ghost?.DeactivateGhost();
         isEnemySpawned = false;
 
         AudioMgr.Instance.StopLoopSFX("ComputerNoise");
+    }
+
+    public override void OnPlayerDead()
+    {
+        base.OnPlayerDead();
+        UIMgr.Instance.HideScreenPanel();
     }
 
     public override void OnNightClear()

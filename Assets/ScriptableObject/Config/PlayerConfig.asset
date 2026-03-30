@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   <AudioConfig>k__BackingField:
     <Step>k__BackingField:
-    - {fileID: 8300000, guid: 07fec0151fa21c44493c6314a53cbbed, type: 3}
-    - {fileID: 8300000, guid: 32a3eeaf58726864dbe7aad5d8edd06d, type: 3}
-    <StepInterval>k__BackingField: 0.7
+    - {fileID: 8300000, guid: cfc691052ddbd6e4ebe413454d3f5591, type: 3}
+    - {fileID: 8300000, guid: 47df2f92da23c6747be7ed7e298fb1b5, type: 3}
+    <StepInterval>k__BackingField: 1
     <StepVolume>k__BackingField: 0.3
   <BaseSpeed>k__BackingField: 3
   <AnimConfig>k__BackingField:

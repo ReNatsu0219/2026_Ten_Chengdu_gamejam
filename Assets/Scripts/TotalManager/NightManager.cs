@@ -25,6 +25,9 @@ public class NightManager : MonoBehaviour
     [SerializeField] private bool isActive=false;
     [SerializeField] private bool isPlayerOnBed = false;
 
+    [Header("BGM")]
+    [SerializeField] private AudioClip NightBGM;
+
     public bool IsPlayerOnBed => isPlayerOnBed;
     public float NightDuration => nightDuration;
     public float EnemySpawnTimer => enemySpawnTimer;
@@ -84,11 +87,13 @@ public class NightManager : MonoBehaviour
     public void ActivateNight()
     {
         isActive = true;
+        AudioMgr.Instance.PlayMusic(NightBGM, true, 0.5f);
     }
 
     public void DeActivateNight()
     {
         isActive = false;
+        AudioMgr.Instance.StopMusic();
     }
 
     private void TimeTick()

@@ -23,6 +23,7 @@ public class AudioMgr : MonoSingleton<AudioMgr>
     {
         public GameObject go;
         public bool isDimensional;
+        public List<AudioSource> sources = new List<AudioSource>();
     }
 
     protected override void Awake()
@@ -53,37 +54,54 @@ public class AudioMgr : MonoSingleton<AudioMgr>
         if (_musicGO == null)
             _musicGO = Instantiate(_musicPrefab, transform);
 
-        var audioSource = _musicGO.GetComponent<AudioSource>();
-        audioSource.loop = isLoop;
-        audioSource.clip = music;
-        audioSource.outputAudioMixerGroup = _musicGroup;
-        audioSource.volume = volume;
-        audioSource.pitch = GetPitchFromDuration(music, targetDuration);
-        audioSource.Play();
+        var sources = PrepareAudioSources(_musicGO, volume);
+
+        float pitch = GetPitchFromDuration(music, targetDuration);
+
+        foreach (var source in sources)
+        {
+            source.loop = isLoop;
+            source.clip = music;
+            source.outputAudioMixerGroup = _musicGroup;
+            source.pitch = pitch;
+            source.Play();
+        }
     }
 
     public void StopMusic()
     {
         if (_musicGO == null) return;
 
-        var audioSource = _musicGO.GetComponent<AudioSource>();
-        audioSource.Stop();
+        var sources = _musicGO.GetComponents<AudioSource>();
+        foreach (var source in sources)
+        {
+            if (source != null)
+                source.Stop();
+        }
     }
 
     public void PauseMusic()
     {
         if (_musicGO == null) return;
 
-        var audioSource = _musicGO.GetComponent<AudioSource>();
-        audioSource.Pause();
+        var sources = _musicGO.GetComponents<AudioSource>();
+        foreach (var source in sources)
+        {
+            if (source != null)
+                source.Pause();
+        }
     }
 
     public void ResumeMusic()
     {
         if (_musicGO == null) return;
 
-        var audioSource = _musicGO.GetComponent<AudioSource>();
-        audioSource.UnPause();
+        var sources = _musicGO.GetComponents<AudioSource>();
+        foreach (var source in sources)
+        {
+            if (source != null)
+                source.UnPause();
+        }
     }
 
     #endregion
@@ -131,30 +149,33 @@ public class AudioMgr : MonoSingleton<AudioMgr>
         var go = _DimensionalAudioPool.Get();
         go.transform.position = position;
 
-        var audioSource = go.GetComponent<AudioSource>();
-        audioSource.loop = isLoop;
-        audioSource.clip = clip;
-        audioSource.outputAudioMixerGroup = _sfxGroup;
-        audioSource.volume = volume;
+        var sources = PrepareAudioSources(go, volume);
 
-        if (targetDuration > 0f)
-            audioSource.pitch = GetPitchFromDuration(clip, targetDuration);
-        else
-            audioSource.pitch = Random.Range(minPitch, maxPitch);
+        float pitch = targetDuration > 0f
+            ? GetPitchFromDuration(clip, targetDuration)
+            : Random.Range(minPitch, maxPitch);
 
-        audioSource.Play();
+        foreach (var audioSource in sources)
+        {
+            audioSource.loop = isLoop;
+            audioSource.clip = clip;
+            audioSource.outputAudioMixerGroup = _sfxGroup;
+            audioSource.pitch = pitch;
+            audioSource.Play();
+        }
 
         if (isLoop && !string.IsNullOrEmpty(key))
         {
             _loopingAudio[key] = new LoopingAudioHandle
             {
                 go = go,
-                isDimensional = true
+                isDimensional = true,
+                sources = sources
             };
         }
         else
         {
-            WaitAudioFinishThenRelease(go, true).Forget();
+            WaitAudioFinishThenRelease(go, true, pitch).Forget();
         }
     }
 
@@ -200,31 +221,33 @@ public class AudioMgr : MonoSingleton<AudioMgr>
             StopLoopSFX(key);
 
         var go = _normalAudioPool.Get();
+        var sources = PrepareAudioSources(go, volume);
 
-        var audioSource = go.GetComponent<AudioSource>();
-        audioSource.loop = isLoop;
-        audioSource.clip = clip;
-        audioSource.outputAudioMixerGroup = _sfxGroup;
-        audioSource.volume = volume;
+        float pitch = targetDuration > 0f
+            ? GetPitchFromDuration(clip, targetDuration)
+            : Random.Range(minPitch, maxPitch);
 
-        if (targetDuration > 0f)
-            audioSource.pitch = GetPitchFromDuration(clip, targetDuration);
-        else
-            audioSource.pitch = Random.Range(minPitch, maxPitch);
-
-        audioSource.Play();
+        foreach (var audioSource in sources)
+        {
+            audioSource.loop = isLoop;
+            audioSource.clip = clip;
+            audioSource.outputAudioMixerGroup = _sfxGroup;
+            audioSource.pitch = pitch;
+            audioSource.Play();
+        }
 
         if (isLoop && !string.IsNullOrEmpty(key))
         {
             _loopingAudio[key] = new LoopingAudioHandle
             {
                 go = go,
-                isDimensional = false
+                isDimensional = false,
+                sources = sources
             };
         }
         else
         {
-            WaitAudioFinishThenRelease(go, false).Forget();
+            WaitAudioFinishThenRelease(go, false, pitch).Forget();
         }
     }
 
@@ -240,9 +263,23 @@ public class AudioMgr : MonoSingleton<AudioMgr>
         {
             if (handle != null && handle.go != null)
             {
-                var audioSource = handle.go.GetComponent<AudioSource>();
-                if (audioSource != null)
-                    audioSource.Stop();
+                if (handle.sources != null)
+                {
+                    foreach (var source in handle.sources)
+                    {
+                        if (source != null)
+                            source.Stop();
+                    }
+                }
+                else
+                {
+                    var sources = handle.go.GetComponents<AudioSource>();
+                    foreach (var source in sources)
+                    {
+                        if (source != null)
+                            source.Stop();
+                    }
+                }
 
                 if (handle.isDimensional)
                     _DimensionalAudioPool.Release(handle.go);
@@ -265,10 +302,10 @@ public class AudioMgr : MonoSingleton<AudioMgr>
 
     #endregion
 
-    private async UniTaskVoid WaitAudioFinishThenRelease(GameObject go, bool isDimensional)
+    private async UniTaskVoid WaitAudioFinishThenRelease(GameObject go, bool isDimensional, float pitch)
     {
-        var audioSource = go.GetComponent<AudioSource>();
-        if (audioSource == null || audioSource.clip == null)
+        var primarySource = GetPrimaryAudioSource(go);
+        if (primarySource == null || primarySource.clip == null)
         {
             if (isDimensional)
                 _DimensionalAudioPool.Release(go);
@@ -277,9 +314,9 @@ public class AudioMgr : MonoSingleton<AudioMgr>
             return;
         }
 
-        float waitTime = audioSource.clip.length;
-        if (audioSource.pitch > 0f)
-            waitTime /= audioSource.pitch;
+        float waitTime = primarySource.clip.length;
+        if (pitch > 0f)
+            waitTime /= pitch;
 
         await UniTask.WaitForSeconds(waitTime);
 
@@ -295,14 +332,13 @@ public class AudioMgr : MonoSingleton<AudioMgr>
 
         float pitch = clip.length / targetDuration;
 
-        // Unity AudioSource.pitch 常用安全范围，避免太夸张
         return Mathf.Clamp(pitch, 0.1f, 3f);
     }
 
     private float MapVolume(float x)
     {
-        x = Mathf.Clamp01(x);
-        return 20f * Mathf.Log10(0.999f * x + 0.001f);
+        x = Mathf.Max(0.0001f, x);
+        return 20f * Mathf.Log10(x);
     }
 
     public float MainVolume
@@ -319,4 +355,102 @@ public class AudioMgr : MonoSingleton<AudioMgr>
     {
         set => _sfxGroup.audioMixer.SetFloat("SFXVolume", MapVolume(value));
     }
+
+    #region Volume > 1 Support
+
+    private List<AudioSource> PrepareAudioSources(GameObject go, float totalVolume)
+    {
+        totalVolume = Mathf.Max(0f, totalVolume);
+
+        int requiredCount = Mathf.Max(1, Mathf.CeilToInt(totalVolume));
+        EnsureAudioSourceCount(go, requiredCount);
+
+        var allSources = go.GetComponents<AudioSource>();
+        var result = new List<AudioSource>(requiredCount);
+
+        float remaining = totalVolume;
+
+        for (int i = 0; i < allSources.Length; i++)
+        {
+            var source = allSources[i];
+            if (source == null) continue;
+
+            source.Stop();
+            source.clip = null;
+            source.loop = false;
+            source.pitch = 1f;
+
+            if (i < requiredCount && remaining > 0f)
+            {
+                float piece = Mathf.Min(1f, remaining);
+                source.volume = piece;
+                source.enabled = true;
+                result.Add(source);
+                remaining -= piece;
+            }
+            else
+            {
+                source.volume = 0f;
+                source.enabled = true;
+            }
+        }
+
+        return result;
+    }
+
+    private void EnsureAudioSourceCount(GameObject go, int count)
+    {
+        var sources = go.GetComponents<AudioSource>();
+
+        if (sources.Length == 0)
+        {
+            go.AddComponent<AudioSource>();
+            sources = go.GetComponents<AudioSource>();
+        }
+
+        var template = sources[0];
+
+        while (sources.Length < count)
+        {
+            var newSource = go.AddComponent<AudioSource>();
+            CopyAudioSourceSettings(template, newSource);
+            sources = go.GetComponents<AudioSource>();
+        }
+    }
+
+    private AudioSource GetPrimaryAudioSource(GameObject go)
+    {
+        var sources = go.GetComponents<AudioSource>();
+        if (sources == null || sources.Length == 0) return null;
+        return sources[0];
+    }
+
+    private void CopyAudioSourceSettings(AudioSource from, AudioSource to)
+    {
+        if (from == null || to == null) return;
+
+        to.playOnAwake = from.playOnAwake;
+        to.bypassEffects = from.bypassEffects;
+        to.bypassListenerEffects = from.bypassListenerEffects;
+        to.bypassReverbZones = from.bypassReverbZones;
+        to.priority = from.priority;
+        to.mute = from.mute;
+        to.panStereo = from.panStereo;
+        to.spatialBlend = from.spatialBlend;
+        to.reverbZoneMix = from.reverbZoneMix;
+        to.dopplerLevel = from.dopplerLevel;
+        to.spread = from.spread;
+        to.rolloffMode = from.rolloffMode;
+        to.minDistance = from.minDistance;
+        to.maxDistance = from.maxDistance;
+        to.ignoreListenerVolume = from.ignoreListenerVolume;
+        to.ignoreListenerPause = from.ignoreListenerPause;
+        to.outputAudioMixerGroup = from.outputAudioMixerGroup;
+
+#if UNITY_2022_2_OR_NEWER
+        to.velocityUpdateMode = from.velocityUpdateMode;
+#endif
+    }
+
+    #endregion
 }

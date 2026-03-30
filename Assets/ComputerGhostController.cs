@@ -13,6 +13,9 @@ public class ComputerGhostController : MonoBehaviour
     [SerializeField] private bool isActive = false;
     [SerializeField] private int currentTickCount = 0;
 
+    [Header("“Ù–ß")]
+    [SerializeField] private AudioClip ComputerGhostSFX;
+
     private void Awake()
     {
         if (ghostVisual == null)
@@ -37,6 +40,8 @@ public class ComputerGhostController : MonoBehaviour
         isActive = true;
         currentTickCount = 0;
 
+        AudioMgr.Instance.PlayNormalSFX(ComputerGhostSFX, this.transform.position, true, "ComputerGhostSFX");
+
         Subscribe();
     }
 
@@ -47,6 +52,8 @@ public class ComputerGhostController : MonoBehaviour
 
         if (ghostVisual != null)
             ghostVisual.SetActive(false);
+
+        AudioMgr.Instance.StopLoopSFX("ComputerGhostSFX");
 
         Unsubscribe();
     }

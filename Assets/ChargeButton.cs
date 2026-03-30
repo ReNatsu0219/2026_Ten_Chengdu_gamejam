@@ -7,12 +7,16 @@ public class ChargeButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
     [SerializeField] private ComputerFacility computer;
     [SerializeField] private ChargeBar chargeBar;
 
+    [Header("SFX")]
+    [SerializeField] private AudioClip ChargeSFX;
+
     private bool isHolding = false;
 
     public void OnPointerDown(PointerEventData eventData)
     {
         isHolding = true;
         computer?.SetCharging(true);
+        AudioMgr.Instance.PlayNormalSFX(ChargeSFX, this.transform.position, true, "charge", 5f);
     }
 
     public void OnPointerUp(PointerEventData eventData)
@@ -42,5 +46,6 @@ public class ChargeButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
     {
         isHolding = false;
         computer?.SetCharging(false);
+        AudioMgr.Instance.StopLoopSFX("charge");
     }
 }

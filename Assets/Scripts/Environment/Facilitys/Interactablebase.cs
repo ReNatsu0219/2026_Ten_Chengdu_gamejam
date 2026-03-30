@@ -53,7 +53,9 @@ public abstract class Interactablebase : MonoBehaviour
 
     public virtual void OnNightClear() { }
 
-    public virtual void OnPlayerDead() { }
+    public virtual void OnPlayerDead() {
+        isInteractable = false;
+    }
 
     public virtual void SetDisabled(bool value)
     {

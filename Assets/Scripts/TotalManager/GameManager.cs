@@ -31,6 +31,9 @@ public class GameManager : MonoBehaviour
     [Header("¹ý¶É²ÎÊý")]
     [SerializeField] private float phaseTransitionDuration = 2f;
 
+    [Header("BGM")]
+    [SerializeField] private AudioClip DayBGM;
+
     private bool isTransitioning = false;
 
     public GamePhase CurrentPhase => currentPhase;
@@ -63,6 +66,8 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
         currentPhase = GamePhase.Menu;
+        AudioMgr.Instance.PlayMusic(DayBGM, true, 0.5f);
+
     }
 
     private void Start()
@@ -75,12 +80,14 @@ public class GameManager : MonoBehaviour
     public void SwitchDayToNight()
     {
         if (currentPhase != GamePhase.Day || isTransitioning) return;
+        AudioMgr.Instance.StopMusic();
         StartCoroutine(DayToNightRoutine());
     }
 
     public void SwitchNightToDay()
     {
         if (currentPhase != GamePhase.Night || isTransitioning) return;
+        AudioMgr.Instance.PlayMusic(DayBGM, true, 0.5f);
         StartCoroutine(NightToDayRoutine());
     }
 
