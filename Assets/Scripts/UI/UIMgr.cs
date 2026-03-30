@@ -11,6 +11,9 @@ public class UIMgr : MonoSingleton<UIMgr>
     [SerializeField] public RectTransform CurrentPowerWindow { get; private set; }
     [SerializeField] private CurrentPowerWindowUI currentPowerWindowUI;
 
+    [SerializeField] private CanvasGroup screenPanelCanvasGroup;
+    [SerializeField] private GameObject screenPanel;
+
     [SerializeField] private GameObject _pausePanel;
     [SerializeField] private Button _settingsBtn;
     [SerializeField] private Button _backBtn;
@@ -27,8 +30,16 @@ public class UIMgr : MonoSingleton<UIMgr>
         _thinkIconPos = _thinkingIcon.transform.localPosition;
         _settingsBtn.onClick.AddListener(TogglePausePanel);
         _backBtn.onClick.AddListener(TogglePausePanel);
-        _currentPowerWindowPos = CurrentPowerWindow.transform.localPosition;
+
+        if (CurrentPowerWindow == null && currentPowerWindowUI != null)
+            CurrentPowerWindow = currentPowerWindowUI.GetComponent<RectTransform>();
+
+        if (CurrentPowerWindow != null)
+            _currentPowerWindowPos = CurrentPowerWindow.transform.localPosition;
+        else
+            Debug.LogError("CurrentPowerWindow √ª…Ë÷√");
     }
+
     #region Operation Panel
     public async UniTaskVoid OperationPanelFadeIn(CanvasGroup canvasGroup, RectTransform rectTransform, float xPos, float yPos = 0f, float duration = 1f)
     {
@@ -113,25 +124,40 @@ public class UIMgr : MonoSingleton<UIMgr>
     {
         FadeInGameOverPanel().Forget();
     }
+
+    public void DeadOver()
+    {
+        FadeOutGameOverPanel().Forget();
+    }
     public async UniTaskVoid FadeInGameOverPanel(float duration = 1f)
     {
         _gameOverPanel.SetActive(true);
+        _gameOverMask.SetActive(true);
 
-        _gameOverPanel.GetComponent<Image>().DOBlendableColor(new Color(1f, 0f, 0f, 0.9f), duration * 0.5f);
-        _gameOverMask.GetComponent<Image>().DOBlendableColor(new Color(1f, 0f, 0f, 1f), duration * 0.25f);
+        Image panelImage = _gameOverPanel.GetComponent<Image>();
+        Image maskImage = _gameOverMask.GetComponent<Image>();
 
-        await UniTask.WaitForSeconds(duration * 0.25f);
+        panelImage.color = new Color(1f, 0f, 0f, 0f);
+        maskImage.color = new Color(1f, 0f, 0f, 0f);
 
-        _gameOverMask.GetComponent<Image>().DOBlendableColor(new Color(0.5f, 0f, 0f, 0.5f), duration * 0.25f);
+        panelImage.DOColor(new Color(1f, 0f, 0f, 1f), duration);
+        maskImage.DOColor(new Color(1f, 0f, 0f, 1f), duration);
+
+        await UniTask.WaitForSeconds(duration);
     }
+
     public async UniTaskVoid FadeOutGameOverPanel(float duration = 0.5f)
     {
-        _gameOverPanel.GetComponent<Image>().DOBlendableColor(new Color(0f, 0f, 0f, 0.8f), duration);
-        _gameOverMask.GetComponent<Image>().DOBlendableColor(new Color(0.5f, 0f, 0f, 0.5f), duration);
+        Image panelImage = _gameOverPanel.GetComponent<Image>();
+        Image maskImage = _gameOverMask.GetComponent<Image>();
+
+        panelImage.DOColor(new Color(1f, 0f, 0f, 0f), duration);
+        maskImage.DOColor(new Color(1f, 0f, 0f, 0f), duration);
 
         await UniTask.WaitForSeconds(duration);
 
         _gameOverPanel.SetActive(false);
+        _gameOverMask.SetActive(false);
     }
     #endregion
 
@@ -149,6 +175,35 @@ public class UIMgr : MonoSingleton<UIMgr>
         rectTransform.transform.localPosition = new Vector3(xPos, yPos, 0f);
         rectTransform.DOAnchorPos(new Vector2(xPos, 1000f), duration).SetEase(Ease.InOutQuint);
         canvasGroup.DOFade(0f, duration);
+    }
+
+    public void ShowScreenPanel(float duration = 0.2f)
+    {
+        if (screenPanel == null || screenPanelCanvasGroup == null) return;
+
+        screenPanel.SetActive(true);
+
+        _settingsBtn.interactable = false;
+
+        screenPanelCanvasGroup.alpha = 0f;
+
+        screenPanelCanvasGroup.DOKill();
+        screenPanelCanvasGroup.DOFade(1f, duration).SetEase(Ease.OutQuad);
+    }
+
+    public void HideScreenPanel()
+    {
+        if (screenPanel == null) return;
+
+        screenPanel.SetActive(false);
+
+        // ª÷∏¥‘›Õ£∞¥≈•
+        _settingsBtn.interactable = true;
+    }
+
+    public bool IsScreenPanelOpen()
+    {
+        return screenPanel != null && screenPanel.activeSelf;
     }
 
     private Ease GetRandomEase()

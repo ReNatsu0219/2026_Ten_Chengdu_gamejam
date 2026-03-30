@@ -5,19 +5,21 @@ using UnityEngine;
 public abstract class Interactablebase : MonoBehaviour
 {
     [Header("交互设置")]
-    public string interactPrompt = "按E交互";   //物品可交互时显示的文字(可能会用到)
-    public bool isInteractable = false; //物品是否可交互
+    public string interactPrompt = "按E交互";
+    public bool isInteractable = false;
 
     [Header("状态设置")]
-    public bool isPlayerInRange = false;    //玩家是否处于范围内
-    public bool isDisabled = false; //物品是否被禁用
+    public bool isPlayerInRange = false;
+    public bool isDisabled = false;
 
     [Header("碰撞器")]
     public Collider2D interactionCollider;
 
     [Header("渲染器")]
     public SpriteRenderer spriteRenderer;
-     
+
+    private bool hasSubscribed = false;
+
     protected virtual void ObjectAwake() { }
 
     public virtual void OnPlayerEnterRange()
@@ -40,7 +42,10 @@ public abstract class Interactablebase : MonoBehaviour
 
     public virtual void OnNightStart() { }
 
-    public virtual void OnNightEnd() { }
+    public virtual void OnNightEnd()
+    {
+        Debug.Log("收到夜晚结束的事件 " + this.name);
+    }
 
     public virtual void OnDayStart() { }
 
@@ -57,7 +62,7 @@ public abstract class Interactablebase : MonoBehaviour
 
     public virtual string GetPromptText()
     {
-        if (isDisabled) return"现在无法使用";
+        if (isDisabled) return "现在无法使用";
         return interactPrompt;
     }
 
@@ -83,25 +88,42 @@ public abstract class Interactablebase : MonoBehaviour
         {
             interactionCollider = GetComponent<Collider2D>();
         }
-        if (spriteRenderer==null)
+
+        if (spriteRenderer == null)
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
         }
+
+        isInteractable = true;
+        isDisabled = false;
+
         ObjectAwake();
     }
 
-    private void OnEnable()
+    protected virtual IEnumerator Start()
     {
-        if (GameManager.Instance != null)
+        while (GameManager.Instance == null)
         {
-            GameManager.Instance.OnNightStarted += OnNightStart;
-            GameManager.Instance.OnNightEnded += OnNightEnd;
-            GameManager.Instance.OnDayStarted += OnDayStart;
-            GameManager.Instance.OnDayEnded += OnDayEnd;
-            GameManager.Instance.OnNightClear += OnNightClear;
-            GameManager.Instance.OnPlayerDead += OnPlayerDead;
-            Debug.Log("所有可交互物体已订阅昼夜切换事件");
+            yield return null;
         }
+
+        SubscribeEvents();
+    }
+
+    private void SubscribeEvents()
+    {
+        if (hasSubscribed) return;
+        if (GameManager.Instance == null) return;
+
+        GameManager.Instance.OnNightStarted += OnNightStart;
+        GameManager.Instance.OnNightEnded += OnNightEnd;
+        GameManager.Instance.OnDayStarted += OnDayStart;
+        GameManager.Instance.OnDayEnded += OnDayEnd;
+        GameManager.Instance.OnNightClear += OnNightClear;
+        GameManager.Instance.OnPlayerDead += OnPlayerDead;
+
+        hasSubscribed = true;
+        Debug.Log($"{name} 已订阅昼夜切换事件");
     }
 
     private void Update()
@@ -112,16 +134,28 @@ public abstract class Interactablebase : MonoBehaviour
         }
     }
 
-    private void OnDisable()
+    protected virtual void OnDisable()
     {
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.OnNightStarted -= OnNightStart;
-            GameManager.Instance.OnNightEnded -= OnNightEnd;
-            GameManager.Instance.OnDayStarted -= OnDayStart;
-            GameManager.Instance.OnDayEnded -= OnDayEnd;
-            GameManager.Instance.OnNightClear -= OnNightClear;
-            GameManager.Instance.OnPlayerDead -= OnPlayerDead;
-        }
+        UnsubscribeEvents();
+    }
+
+    protected virtual void OnDestroy()
+    {
+        UnsubscribeEvents();
+    }
+
+    private void UnsubscribeEvents()
+    {
+        if (!hasSubscribed) return;
+        if (GameManager.Instance == null) return;
+
+        GameManager.Instance.OnNightStarted -= OnNightStart;
+        GameManager.Instance.OnNightEnded -= OnNightEnd;
+        GameManager.Instance.OnDayStarted -= OnDayStart;
+        GameManager.Instance.OnDayEnded -= OnDayEnd;
+        GameManager.Instance.OnNightClear -= OnNightClear;
+        GameManager.Instance.OnPlayerDead -= OnPlayerDead;
+
+        hasSubscribed = false;
     }
 }

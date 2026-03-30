@@ -11,6 +11,10 @@ public enum PCStatus
 
 public class ComputerFacility : Facilitybase
 {
+    [Header("引用")]
+    [SerializeField] private ComputerGhostController Ghost;
+    [SerializeField] private ChargeBar chargeBar;
+
     [Header("能量")]
     [SerializeField] private float facilityEnergy=1f;  //夜晚间充能能量
 
@@ -25,7 +29,7 @@ public class ComputerFacility : Facilitybase
     [SerializeField] private float energyLosingRate = 0.002f;
     [SerializeField] private float deadlineEnergy = -2f;
     [SerializeField] private float baseEnemySpawnRate = 0.05f;
-    [SerializeField] private int enemyCooldown = 10;
+    [SerializeField] private int enemyCooldown = 2;
 
     [Header("成长参数 - 充能")]
     [SerializeField] private float powerChargeFactor = 0.001f;        // 电力对充能加成
@@ -35,8 +39,10 @@ public class ComputerFacility : Facilitybase
     [SerializeField] private float powerLoseFactor = 0.0001f;         // 电力减缓消耗
 
     [Header("成长参数 - 敌人生成")]
-    [SerializeField] private float daySpawnFactor = 0.001f;          // 天数影响
-    [SerializeField] private float nightSpawnFactor = 0.001f;        // 夜晚时间影响
+    [SerializeField] private float daySpawnFactor = 0.02f;          // 天数影响
+    [SerializeField] private float nightSpawnFactor = 0.01f;        // 夜晚时间影响
+    [SerializeField] private float powerSpawnFactor;
+
 
     [Header("限制参数")]
     [SerializeField] private float minEnergy = 0f;
@@ -50,25 +56,22 @@ public class ComputerFacility : Facilitybase
     [SerializeField] private AudioClip ComputerNoise;
     [SerializeField] private AudioClip ChargingNoise;
 
-    private int enemtCooldownTimer = 0;
+    private int enemyCooldownTimer = 0;
 
     public float FacilityEnergy=>facilityEnergy;
     public PCStatus CurrentStatus=>currentStatus;
-    private float MaxEnergy => maxEnergy;
-    private bool IsCharging => isCharging;
+    public float MaxEnergy => maxEnergy;
+    public bool IsCharging => isCharging;
 
     protected override void ObjectAwake()
     {
         base.ObjectAwake();
         if(GameManager.Instance != null)
         {
-            GameManager.Instance.OnDayStarted += OnDayStart;
-            GameManager.Instance.OnDayEnded += OnDayEnd;
-
-            GameManager.Instance.OnNightStarted += OnNightStart;
-            GameManager.Instance.OnNightEnded += OnNightEnd;
            
         }
+        isDisabled = false;
+        isInteractable = true;
     }
 
     public void SetEnergy(int value)
@@ -128,7 +131,7 @@ public class ComputerFacility : Facilitybase
             EnergyLosing(GetLosingRate());
         }
 
-        if(enemtCooldownTimer>0)enemtCooldownTimer--;
+        if(enemyCooldownTimer>0 && !UIMgr.Instance.IsScreenPanelOpen())enemyCooldownTimer--;
     }
 
     private float GetChargingRate()
@@ -149,7 +152,8 @@ public class ComputerFacility : Facilitybase
     {
         float value = baseEnemySpawnRate
             + GameManager.Instance.CurrentDay * daySpawnFactor
-            + NightManager.Instance.CurrentNightTime * nightSpawnFactor;
+            + NightManager.Instance.CurrentNightTime * nightSpawnFactor
+            - allocatedPower * powerSpawnFactor;
 
         return Mathf.Clamp(value, 0f, maxSpawnRate);
     }
@@ -160,35 +164,42 @@ public class ComputerFacility : Facilitybase
     
     }
 
+    public void SetCharging(bool value)
+    {
+        isCharging = value;
+    }
 
     protected override void OnInteract()
     {
         if (currentStatus == PCStatus.ChargingMode)
         {
-            /*
-            if (enemtCooldownTimer == 0)
+
+            if (UIMgr.Instance.IsScreenPanelOpen())
             {
-                isEnemySpawned = true ? ShouldSpawnEnemyOnInteract() : false;
-                enemtCooldownTimer = enemyCooldown;
+                SetCharging(false);
+                UIMgr.Instance.HideScreenPanel();
+                Ghost?.DeactivateGhost();
+                isEnemySpawned = false;
+                return;
+            }
+
+            if (enemyCooldownTimer == 0)
+            {
+                isEnemySpawned = ShouldSpawnEnemyOnInteract();
+                enemyCooldownTimer = enemyCooldown;
             }
 
             if (isEnemySpawned)
-            {
-                //OpenPanel(dangerPanelCanvasGroup, dangerPanelRectTransform);
-            }
-            else
-            {
-                //OpenPanel(nightPanelCanvasGroup, nightPanelRectTransform);
-            }
-            */
+                Ghost?.ActivateGhost();
 
-            EnergyCharging(GetChargingRate());
-            AudioMgr.Instance.PlayDimensionalSFX(ChargingNoise,this.transform.position);
-
-        }else if(currentStatus == PCStatus.PowerAllocationMode)
+            UIMgr.Instance.ShowScreenPanel();
+            chargeBar.Initialize(facilityEnergy, maxEnergy);
+        }
+        else
         {
             Debug.Log("Interact with computer in day");
             HandlePanel(DaycanvasGroup, DayrectTransform);
+            
         }
     }
 
@@ -212,6 +223,11 @@ public class ComputerFacility : Facilitybase
         base.OnNightEnd();
         ExitChargingMode();
 
+        SetCharging(false);
+        UIMgr.Instance.HideScreenPanel();
+        Ghost?.DeactivateGhost();
+        isEnemySpawned = false;
+
         AudioMgr.Instance.StopLoopSFX("ComputerNoise");
     }
 
@@ -220,6 +236,21 @@ public class ComputerFacility : Facilitybase
         base.OnNightClear();
         int RestEnergy = (int)((facilityEnergy / maxEnergy) * GameManager.Instance.DailyPower);
         GameManager.Instance.PowerSet(GameManager.Instance.CurrentPower + RestEnergy);
+    }
+
+    protected override void PossessedRoutine()
+    {
+        base.PossessedRoutine();
+
+        SetCharging(false);
+
+        if (UIMgr.Instance != null && UIMgr.Instance.IsScreenPanelOpen())
+        {
+            UIMgr.Instance.HideScreenPanel();
+        }
+
+        Ghost?.DeactivateGhost();
+        isEnemySpawned = false;
     }
 
     public override void ResetFacility()

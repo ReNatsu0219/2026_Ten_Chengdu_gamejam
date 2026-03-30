@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public enum GamePhase
@@ -175,7 +176,13 @@ public class GameManager : MonoBehaviour
         OnPlayerDead?.Invoke();
         Debug.Log("ÕÊº“À¿Õˆ£∫" + deathtype);
 
+        UIMgr.Instance.Dead();
+    }
+
+    public void ReStart()
+    {
         SwitchNightToDay();
+        UIMgr.Instance.DeadOver();
     }
 
     public void PowerSet(int value)

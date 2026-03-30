@@ -100,11 +100,14 @@ public class BedFacility : Facilitybase
     {
         base.OnNightEnd();
 
-        if (currentPlayer != null && isPlayerInBed)
+        Debug.Log("收到广播，把玩家赶下床");
+
+        if (isPlayerInBed)
         {
             PlayerLeaveBed();
         }
     }
+
 
     public override void ResetFacility()
     {
